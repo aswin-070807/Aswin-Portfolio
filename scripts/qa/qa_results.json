@@ -1,0 +1,8 @@
+{
+  "webm_alpha_mode_confirmed": true,
+  "decoded_alpha_channel_confirmed": true,
+  "audio_stream_confirmed": true,
+  "active_method": "Method A (u2net_human_seg ONNX)",
+  "output_size_mb": 0.893,
+  "qa_checks_passed": true
+}
