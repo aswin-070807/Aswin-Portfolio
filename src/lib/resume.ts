@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 
 export const RESUME_CONFIG = {
   FOLDER_ID: "1-51aXLTIuKgyTeFSe95_c89SLSWE7eMs",
+  FILE_ID: "1i5iDu_dZCw1L9EwnZ5j4Ts3X9MELZkDi",
   FILENAME: "Aswin_A_Resume.pdf",
+  LOCAL_PATH: "/Aswin_A_Resume.pdf",
+  DRIVE_VIEW_URL: "https://drive.google.com/file/d/1i5iDu_dZCw1L9EwnZ5j4Ts3X9MELZkDi/view?usp=sharing",
+  DRIVE_DOWNLOAD_URL: "https://drive.google.com/uc?export=download&id=1i5iDu_dZCw1L9EwnZ5j4Ts3X9MELZkDi",
   CACHE_TTL_MS: 10 * 60 * 1000, // 10 minutes in-memory cache
   REQUEST_TIMEOUT_MS: 10000, // 10-second request timeout
 } as const;
@@ -22,9 +26,45 @@ let cachedResumeBlob: Blob | null = null;
 let blobCacheTimestamp = 0;
 let inflightBlobFetch: Promise<Blob | null> | null = null;
 
+export function resetResumeCacheForTesting(): void {
+  cachedResumeFile = null;
+  fileCacheTimestamp = 0;
+  inflightFileLookup = null;
+  cachedResumeBlob = null;
+  blobCacheTimestamp = 0;
+  inflightBlobFetch = null;
+}
+
 function getApiKey(): string | undefined {
   const env = (import.meta as unknown as { env?: { VITE_DRIVE_API_KEY?: string } }).env;
   return env?.VITE_DRIVE_API_KEY?.trim();
+}
+
+/**
+ * 0. Fetch the bundled resume blob from same-origin public asset.
+ */
+export async function fetchLocalResumeBlob(): Promise<Blob | null> {
+  if (typeof window === "undefined") return null;
+
+  const now = Date.now();
+  if (cachedResumeBlob && now - blobCacheTimestamp < RESUME_CONFIG.CACHE_TTL_MS) {
+    return cachedResumeBlob;
+  }
+
+  try {
+    const res = await fetch(RESUME_CONFIG.LOCAL_PATH);
+    if (res.ok) {
+      const blob = await res.blob();
+      cachedResumeBlob = blob;
+      blobCacheTimestamp = Date.now();
+      return blob;
+    }
+  } catch (err) {
+    if (import.meta.env?.DEV) {
+      console.warn("[Resume Download] Failed to fetch local resume blob:", err);
+    }
+  }
+  return null;
 }
 
 /**
@@ -200,6 +240,11 @@ async function tryDownloadSameOriginFallback(): Promise<boolean> {
  */
 export async function prefetchResume(): Promise<void> {
   if (typeof window === "undefined") return;
+  // 1. Prefetch local resume asset into cache
+  const localBlob = await fetchLocalResumeBlob();
+  if (localBlob) return;
+
+  // 2. Otherwise query Drive API if key is available
   const file = await fetchLatestResumeMetadata();
   if (file?.id) {
     await fetchResumeBlob(file.id);
@@ -232,13 +277,16 @@ export function useLatestResume() {
       let blob = cachedResumeBlob;
       const now = Date.now();
       if (!blob || now - blobCacheTimestamp >= RESUME_CONFIG.CACHE_TTL_MS) {
-        const file = await fetchLatestResumeMetadata();
-        if (file?.id) {
-          blob = await fetchResumeBlob(file.id);
+        blob = await fetchLocalResumeBlob();
+        if (!blob) {
+          const file = await fetchLatestResumeMetadata();
+          if (file?.id) {
+            blob = await fetchResumeBlob(file.id);
+          }
         }
       }
 
-      // 2. If Drive blob is ready, download it directly
+      // 2. If blob is ready, download it directly via ObjectURL
       if (blob) {
         triggerBlobDownload(blob);
         setStatus("downloaded");
@@ -260,7 +308,18 @@ export function useLatestResume() {
         return;
       }
 
-      // 4. If both Drive and local file are unavailable, show inline message, NEVER navigate away
+      // 4. Fallback: open Google Drive link directly so user always gets the file
+      if (typeof window !== "undefined" && RESUME_CONFIG.DRIVE_VIEW_URL) {
+        window.open(RESUME_CONFIG.DRIVE_VIEW_URL, "_blank", "noopener,noreferrer");
+        setStatus("downloaded");
+        if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+        resetTimerRef.current = setTimeout(() => {
+          setStatus("idle");
+        }, 2000);
+        return;
+      }
+
+      // 5. If everything failed, show inline message
       setStatus("error");
       setErrorMessage("Couldn't download right now, please try again");
       if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
@@ -269,6 +328,19 @@ export function useLatestResume() {
         setErrorMessage(null);
       }, 4000);
     } catch {
+      // Safety net: open Google Drive link
+      try {
+        if (typeof window !== "undefined" && RESUME_CONFIG.DRIVE_VIEW_URL) {
+          window.open(RESUME_CONFIG.DRIVE_VIEW_URL, "_blank", "noopener,noreferrer");
+          setStatus("downloaded");
+          if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+          resetTimerRef.current = setTimeout(() => {
+            setStatus("idle");
+          }, 2000);
+          return;
+        }
+      } catch {}
+
       setStatus("error");
       setErrorMessage("Couldn't download right now, please try again");
       if (resetTimerRef.current) clearTimeout(resetTimerRef.current);

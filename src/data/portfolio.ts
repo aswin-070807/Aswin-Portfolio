@@ -11,6 +11,7 @@ export const profile = {
   pitch: "Building AI-powered products and winning hackathons — 3× National Hackathon Finalist.",
   availability: "Open to internships & freelance",
   resumeFolderUrl: "https://drive.google.com/drive/folders/1-51aXLTIuKgyTeFSe95_c89SLSWE7eMs",
+  resumeUrl: "https://drive.google.com/file/d/1i5iDu_dZCw1L9EwnZ5j4Ts3X9MELZkDi/view?usp=sharing",
   location: "Tiruchirappalli, Tamil Nadu, India",
   email: "aswinacse787@gmail.com",
   phone: "+91 97152 70360",
