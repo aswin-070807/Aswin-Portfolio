@@ -2,6 +2,14 @@
 @source "../src";
 @import "tw-animate-css";
 
+/* Custom Smart Cursor: hides native cursor only on desktop when active */
+@media (pointer: fine) {
+  html.custom-cursor-active,
+  html.custom-cursor-active * {
+    cursor: none !important;
+  }
+}
+
 @theme inline {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -50,35 +58,35 @@
 :root {
   --nav-h: 72px;
   /* Unified Theme Tokens */
-  --sky-500: #4FC3F7;   /* main background accent */
-  --sky-300: #81D4FA;
-  --sky-100: #E1F5FE;   /* soft section background */
-  --navy-900: #0B1F4B;  /* headings, body text, dark buttons */
-  --navy-700: #1A3A7A;
-  --yellow-400: #FFD21F;/* highlights, badges, primary accent */
-  --white: #FFFFFF;     /* cards, chips */
-  --seal-color: #C62828;/* tamper-evident evidence bag seal */
+  --sky-500: #4fc3f7; /* main background accent */
+  --sky-300: #81d4fa;
+  --sky-100: #e1f5fe; /* soft section background */
+  --navy-900: #0b1f4b; /* headings, body text, dark buttons */
+  --navy-700: #1a3a7a;
+  --yellow-400: #ffd21f; /* highlights, badges, primary accent */
+  --white: #ffffff; /* cards, chips */
+  --seal-color: #c62828; /* tamper-evident evidence bag seal */
 
   --radius: 1.125rem; /* 18px */
-  --background: #4FC3F7;
-  --foreground: #0B1F4B;
+  --background: #4fc3f7;
+  --foreground: #0b1f4b;
   --card: rgba(255, 255, 255, 0.92);
-  --card-foreground: #0B1F4B;
-  --popover: #FFFFFF;
-  --popover-foreground: #0B1F4B;
-  --primary: #0B1F4B;
-  --primary-foreground: #FFFFFF;
-  --secondary: #E1F5FE;
-  --secondary-foreground: #0B1F4B;
-  --muted: #E1F5FE;
-  --muted-foreground: #1A3A7A;
-  --accent: #FFD21F;
-  --accent-foreground: #0B1F4B;
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
+  --card-foreground: #0b1f4b;
+  --popover: #ffffff;
+  --popover-foreground: #0b1f4b;
+  --primary: #0b1f4b;
+  --primary-foreground: #ffffff;
+  --secondary: #e1f5fe;
+  --secondary-foreground: #0b1f4b;
+  --muted: #e1f5fe;
+  --muted-foreground: #1a3a7a;
+  --accent: #ffd21f;
+  --accent-foreground: #0b1f4b;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
   --border: rgba(11, 31, 75, 0.1);
   --input: rgba(11, 31, 75, 0.12);
-  --ring: #4FC3F7;
+  --ring: #4fc3f7;
 
   /* Global Shadows & Gradients */
   --shadow-navy-card: 0 8px 32px -4px rgba(11, 31, 75, 0.08), 0 2px 8px -2px rgba(11, 31, 75, 0.04);
@@ -86,18 +94,19 @@
   --shadow-yellow-glow: 0 0 22px rgba(255, 210, 31, 0.5);
   --shadow-glow: var(--shadow-yellow-glow);
   --grid-line: rgba(11, 31, 75, 0.04);
-  --gradient-brand: linear-gradient(135deg, #4FC3F7 0%, #81D4FA 100%);
+  --gradient-brand: linear-gradient(135deg, #4fc3f7 0%, #81d4fa 100%);
   --orb-opacity: 0.16;
 
   /* Hero Variables */
-  --hero-sky-500: #4FC3F7;
-  --hero-sky-300: #81D4FA;
-  --hero-sky-100: #E1F5FE;
-  --hero-navy-900: #0B1F4B;
-  --hero-navy-700: #1A3A7A;
-  --hero-yellow-400: #FFD21F;
-  --hero-white: #FFFFFF;
-  --photo-shadow: drop-shadow(0 14px 28px rgba(11, 31, 75, 0.22)) drop-shadow(0 0 2px rgba(11, 31, 75, 0.15));
+  --hero-sky-500: #4fc3f7;
+  --hero-sky-300: #81d4fa;
+  --hero-sky-100: #e1f5fe;
+  --hero-navy-900: #0b1f4b;
+  --hero-navy-700: #1a3a7a;
+  --hero-yellow-400: #ffd21f;
+  --hero-white: #ffffff;
+  --photo-shadow: drop-shadow(0 14px 28px rgba(11, 31, 75, 0.22))
+    drop-shadow(0 0 2px rgba(11, 31, 75, 0.15));
 }
 
 @layer base {
@@ -109,10 +118,10 @@
     scroll-padding-top: 5rem;
     overflow-x: hidden;
     max-width: 100vw;
-    background-color: #4FC3F7;
+    background-color: #4fc3f7;
   }
   body {
-    background-color: #4FC3F7;
+    background-color: #4fc3f7;
     color: var(--navy-900);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -153,17 +162,17 @@
 @utility page-sky-flow {
   background: linear-gradient(
     180deg,
-    #4FC3F7 0%,     /* Hero vivid sky */
-    #68CEF8 8%,
-    #81D4FA 18%,    /* Marquee & Stats */
-    #9EE0FB 28%,    /* About */
-    #B3E5FC 40%,    /* Skills (gentle light sky) */
-    #8BD6FA 52%,    /* Achievements */
-    #69CBF8 66%,    /* Projects */
-    #86D6FA 78%,    /* Experience & Certifications */
-    #64CAF8 88%,    /* Services & Case Conclusion */
-    #4FC3F7 96%,    /* Contact (rich sky blue) */
-    #36BAF7 100%
+    #4fc3f7 0%,
+    /* Hero vivid sky */ #68cef8 8%,
+    #81d4fa 18%,
+    /* Marquee & Stats */ #9ee0fb 28%,
+    /* About */ #b3e5fc 40%,
+    /* Skills (gentle light sky) */ #8bd6fa 52%,
+    /* Achievements */ #69cbf8 66%,
+    /* Projects */ #86d6fa 78%,
+    /* Experience & Certifications */ #64caf8 88%,
+    /* Services & Case Conclusion */ #4fc3f7 96%,
+    /* Contact (rich sky blue) */ #36baf7 100%
   );
 }
 
@@ -205,13 +214,13 @@
   border-radius: 9999px;
 }
 @utility thumb-1 {
-  background: linear-gradient(135deg, #4FC3F7 0%, #1A3A7A 100%);
+  background: linear-gradient(135deg, #4fc3f7 0%, #1a3a7a 100%);
 }
 @utility thumb-2 {
-  background: linear-gradient(135deg, #81D4FA 0%, #0B1F4B 100%);
+  background: linear-gradient(135deg, #81d4fa 0%, #0b1f4b 100%);
 }
 @utility thumb-3 {
-  background: linear-gradient(135deg, #FFD21F 0%, #4FC3F7 50%, #0B1F4B 100%);
+  background: linear-gradient(135deg, #ffd21f 0%, #4fc3f7 50%, #0b1f4b 100%);
 }
 @utility animate-marquee {
   animation: marquee 35s linear infinite;
@@ -233,7 +242,8 @@
    HERO FLOATING CHIPS & BREATHING ANIMATIONS
    ───────────────────────────────────────────────────────────── */
 @keyframes hero-chip-float-1 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px) rotate(var(--rot, -3deg));
   }
   50% {
@@ -241,7 +251,8 @@
   }
 }
 @keyframes hero-chip-float-2 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px) rotate(var(--rot, 3deg));
   }
   50% {
@@ -249,7 +260,8 @@
   }
 }
 @keyframes hero-chip-float-3 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px) rotate(var(--rot, -4deg));
   }
   50% {
@@ -257,7 +269,8 @@
   }
 }
 @keyframes hero-chip-float-4 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px) rotate(var(--rot, 4deg));
   }
   50% {
@@ -266,7 +279,8 @@
 }
 
 @keyframes hero-circle-breathe {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -338,4 +352,3 @@
     animation: none !important;
   }
 }
-

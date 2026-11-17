@@ -445,6 +445,8 @@ function ClosedEvidenceFileCard({
         role="button"
         tabIndex={0}
         aria-label={`Open evidence file for ${item.exhibitLetter}: ${item.title}, status ${item.status}`}
+        data-cursor="file"
+        data-cursor-label="OPEN FILE"
         onClick={handleTriggerOpen}
         onPointerMove={handlePointerMove}
         onPointerEnter={() => setIsHovered(true)}

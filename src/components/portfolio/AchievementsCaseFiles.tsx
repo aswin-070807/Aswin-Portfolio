@@ -390,6 +390,8 @@ function CaseFileCard({
         role="button"
         tabIndex={0}
         data-case={item.caseNumber}
+        data-cursor="file"
+        data-cursor-label="OPEN FILE"
         aria-label={`Open ${item.caseNumber}: ${item.eventName}, ${item.position}`}
         onClick={onOpenDossier}
         onKeyDown={(e) => {

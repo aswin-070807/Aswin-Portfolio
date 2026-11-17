@@ -680,6 +680,8 @@ export function AboutDossier() {
             animate={reduceMotion ? "reduced" : isInView ? "shake" : "initial"}
             className="relative w-full bg-[#FBF6E9] rounded-[14px] border border-[#0B1F4B]/15 overflow-hidden shadow-[0_1px_3px_rgba(11,31,75,0.08)]"
             aria-label="Passport Booklet of Aswin A"
+            data-cursor="file"
+            data-cursor-label="INSPECT PASSPORT"
           >
             {/* Paper Grain Overlay */}
             <div
