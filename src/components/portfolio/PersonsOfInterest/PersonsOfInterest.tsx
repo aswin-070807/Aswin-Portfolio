@@ -246,8 +246,8 @@ export function PersonsOfInterest() {
               >
                 {SUSPECTS_DATA.map((suspect) => {
                   const isActive = activeSuspect.id === suspect.id;
-                  const containerHeightStyle = `calc(var(--px-per-cm, 2.0px) * ${suspect.heightCm} * (900 / 820))`;
-                  const containerBottomStyle = `calc(var(--floor-offset, 48px) - (var(--px-per-cm, 2.0px) * ${suspect.heightCm} * (20 / 820)))`;
+                  const containerHeightStyle = `calc(var(--px-per-cm, 2.0px) * ${suspect.heightCm} * (1400 / 1260))`;
+                  const containerBottomStyle = `calc(var(--floor-offset, 48px) - (var(--px-per-cm, 2.0px) * ${suspect.heightCm} * (40 / 1260)))`;
 
                   return (
                     <div
@@ -257,8 +257,8 @@ export function PersonsOfInterest() {
                     >
                       {/* Overhead Mobile Spotlight */}
                       <div
-                        className={`absolute -top-6 inset-x-0 h-[400px] pointer-events-none transition-opacity duration-300 ${
-                          isActive ? "opacity-95" : "opacity-25"
+                        className={`absolute -top-6 inset-x-0 h-[400px] pointer-events-none transition-opacity duration-200 ${
+                          isActive ? "opacity-95" : "opacity-20"
                         }`}
                         style={{
                           background: `radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 50%, transparent 75%)`,
@@ -268,7 +268,7 @@ export function PersonsOfInterest() {
 
                       {/* Floor Glow */}
                       <div
-                        className={`absolute bottom-6 w-36 h-10 rounded-full pointer-events-none transition-all duration-300 blur-md ${
+                        className={`absolute bottom-6 w-36 h-10 rounded-full pointer-events-none transition-all duration-200 blur-md ${
                           isActive ? "opacity-100 scale-105" : "opacity-0"
                         }`}
                         style={{
@@ -276,27 +276,32 @@ export function PersonsOfInterest() {
                         }}
                       />
 
-                      {/* Scaled Figure with Exact Height Scale */}
+                      {/* Scaled Figure with Exact Height Scale (Zero blur, dims with brightness/saturate, scales down when inactive) */}
                       <div
-                        className={`relative flex items-center justify-center transition-all duration-300 ${
-                          isActive ? "scale-100 opacity-100" : "scale-95 opacity-45 filter grayscale-[55%]"
+                        className={`relative flex items-center justify-center transition-all duration-200 ${
+                          isActive
+                            ? "scale-100 opacity-100"
+                            : "scale-95 opacity-45 filter brightness-75 saturate-50"
                         }`}
                         style={{
                           position: "absolute",
                           bottom: containerBottomStyle,
                           height: containerHeightStyle,
                           width: "auto",
-                          aspectRatio: "400 / 900",
+                          aspectRatio: "600 / 1400",
                         }}
                       >
                         <img
                           src={suspect.imageSrc}
+                          srcSet={`${suspect.imageSrc} 1x, ${suspect.imageSrc} 2x`}
+                          sizes="74vw"
                           alt={`${suspect.name}, suspect ${suspect.number}`}
-                          width={400}
-                          height={900}
+                          width={600}
+                          height={1400}
                           loading={suspect.number === 1 ? "eager" : "lazy"}
                           decoding="async"
-                          className="w-full h-full object-contain filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.7)] pointer-events-none"
+                          className="w-full h-full object-contain pointer-events-none"
+                          style={{ imageRendering: "auto" }}
                         />
 
                         {/* Chest Patch Overlay */}

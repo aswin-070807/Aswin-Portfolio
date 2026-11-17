@@ -20,12 +20,12 @@ export function Suspect({
   reduceMotion = false,
 }: SuspectProps) {
   // Head top lands exactly at stated heightCm on the height chart!
-  // In the 400x900 canvas, feet are at y=880 (20px up from bottom) and head is at y=60 (820px tall).
-  // Total canvas height = (heightCm * pxPerCm) * (900 / 820).
-  const containerHeightStyle = `calc(var(--px-per-cm, 2.4px) * ${suspect.heightCm} * (900 / 820))`;
-  const containerBottomStyle = `calc(var(--floor-offset, 48px) - (var(--px-per-cm, 2.4px) * ${suspect.heightCm} * (20 / 820)))`;
+  // In the 600x1400 canvas, feet are at y=1360 (40px up from bottom) and head is at y=100 (1260px tall).
+  // Total canvas height = (heightCm * pxPerCm) * (1400 / 1260).
+  const containerHeightStyle = `calc(var(--px-per-cm, 2.4px) * ${suspect.heightCm} * (1400 / 1260))`;
+  const containerBottomStyle = `calc(var(--floor-offset, 48px) - (var(--px-per-cm, 2.4px) * ${suspect.heightCm} * (40 / 1260)))`;
 
-  // Visual state: active vs dimmed
+  // Visual state: active vs dimmed (DIM ONLY with opacity, brightness, saturate; ZERO blur; scale down when inactive)
   const isDimmed = isAnyActive && !isActive;
 
   return (
@@ -33,8 +33,10 @@ export function Suspect({
       role="button"
       tabIndex={0}
       aria-label={`${suspect.name}, Suspect number ${suspect.number}, Height ${suspect.heightCm} cm. Press Enter to view case file.`}
-      className={`group relative flex flex-col items-center justify-end cursor-pointer outline-none transition-all duration-300 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-sm ${
-        isDimmed ? "opacity-45 filter grayscale-[55%] scale-[0.98]" : "opacity-100 scale-100 z-20"
+      className={`group relative flex flex-col items-center justify-end cursor-pointer outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-sm ${
+        isDimmed
+          ? "opacity-45 filter brightness-75 saturate-50 scale-[0.96]"
+          : "opacity-100 scale-100 z-20"
       }`}
       style={{
         width: "min(280px, 19vw)",
@@ -52,8 +54,8 @@ export function Suspect({
     >
       {/* 1. Overhead Spotlight Cone */}
       <div
-        className={`absolute -top-10 inset-x-0 h-[480px] pointer-events-none transition-opacity duration-300 ${
-          isActive ? "opacity-100" : isDimmed ? "opacity-20" : "opacity-40 group-hover:opacity-80"
+        className={`absolute -top-10 inset-x-0 h-[480px] pointer-events-none transition-opacity duration-200 ${
+          isActive ? "opacity-100" : isDimmed ? "opacity-15" : "opacity-35 group-hover:opacity-75"
         }`}
         style={{
           background: `radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 45%, transparent 75%)`,
@@ -64,8 +66,8 @@ export function Suspect({
 
       {/* 2. Warm Floor Glow Ellipse (Active suspect) */}
       <div
-        className={`absolute bottom-8 w-44 h-12 rounded-full pointer-events-none transition-all duration-300 blur-md ${
-          isActive ? "opacity-100 scale-110" : "opacity-0 scale-90"
+        className={`absolute bottom-8 w-44 h-12 rounded-full pointer-events-none transition-all duration-200 blur-md ${
+          isActive ? "opacity-100 scale-105" : "opacity-0 scale-90"
         }`}
         style={{
           background: `radial-gradient(ellipse, ${suspect.accentGlow} 0%, transparent 70%)`,
@@ -73,30 +75,33 @@ export function Suspect({
         aria-hidden="true"
       />
 
-      {/* 3. Figure Container (Sized strictly according to stated heightCm) */}
+      {/* 3. Figure Container (Sized strictly according to stated heightCm; NEVER scale up > 1.0) */}
       <div
-        className={`relative flex items-center justify-center transition-transform duration-300 ${
+        className={`relative flex items-center justify-center transition-transform duration-200 ${
           isActive && !reduceMotion
-            ? "-translate-y-2.5 scale-[1.02]"
-            : "group-hover:-translate-y-1.5 group-hover:scale-[1.01]"
+            ? "-translate-y-2 scale-100"
+            : "group-hover:-translate-y-1 scale-100"
         }`}
         style={{
           position: "absolute",
           bottom: containerBottomStyle,
           height: containerHeightStyle,
           width: "auto",
-          aspectRatio: "400 / 900",
+          aspectRatio: "600 / 1400",
         }}
       >
-        {/* Figure PNG */}
+        {/* Figure PNG - High-Res 600x1400 with image-rendering: auto and srcset for Retina */}
         <img
           src={suspect.imageSrc}
+          srcSet={`${suspect.imageSrc} 1x, ${suspect.imageSrc} 2x`}
+          sizes="(max-width: 768px) 74vw, (max-width: 1200px) 220px, 280px"
           alt={`${suspect.name}, suspect ${suspect.number}`}
-          width={400}
-          height={900}
+          width={600}
+          height={1400}
           loading={suspect.number === 1 ? "eager" : "lazy"}
           decoding="async"
-          className="w-full h-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.65)] select-none pointer-events-none"
+          className="w-full h-full object-contain pointer-events-none select-none"
+          style={{ imageRendering: "auto" }}
         />
 
         {/* Real Case Number overlaid on the jumpsuit's white chest patch */}
@@ -127,20 +132,20 @@ export function Suspect({
         </div>
       </div>
 
-      {/* 4. Glossy Flipped Floor Reflection */}
+      {/* 4. Glossy Flipped Floor Reflection as Separate Low-Opacity Layer (No blur on main figure) */}
       <div
         className="absolute overflow-hidden pointer-events-none select-none z-10"
         style={{
           top: "calc(100% - var(--floor-offset, 48px))",
           height: "calc(var(--floor-offset, 48px) * 0.9)",
           width: "min(280px, 19vw)",
-          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 85%)",
-          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 85%)",
+          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 85%)",
+          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 85%)",
         }}
         aria-hidden="true"
       >
         <div
-          className="relative w-full flex items-center justify-center opacity-30 filter blur-[0.8px]"
+          className="relative w-full flex items-center justify-center opacity-25"
           style={{
             height: containerHeightStyle,
             transform: "scaleY(-1)",
@@ -150,9 +155,10 @@ export function Suspect({
           <img
             src={suspect.imageSrc}
             alt=""
-            width={400}
-            height={900}
+            width={600}
+            height={1400}
             className="w-full h-full object-contain select-none"
+            style={{ imageRendering: "auto" }}
           />
         </div>
       </div>

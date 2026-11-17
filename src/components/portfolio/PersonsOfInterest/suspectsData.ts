@@ -28,17 +28,14 @@ export interface SuspectData {
   links: SuspectLink[];
   icon: "hammer" | "trophy" | "flag" | "compass" | "quill";
   imageSrc: string;
-  /* Offsets relative to normalized 400x900 canvas: percentages */
   chestPatchOffset: { x: number; y: number };
-  /* Offsets in px for placard alignment on chest */
   placardOffset: { x: number; y: number };
-  /* Placard tilt in degrees */
   placardTilt: number;
 }
 
 export const SUSPECTS_DATA: SuspectData[] = [
   {
-    /* [EDIT: Suspect 1 - Core Identifiers] */
+    // SOURCE: Prompt Specification & src/components/portfolio/AboutDossier.tsx (Passport of the Builder)
     id: "builder",
     number: 1,
     code: "ASW-0001",
@@ -52,37 +49,41 @@ export const SUSPECTS_DATA: SuspectData[] = [
     accentGlow: "rgba(59, 130, 246, 0.35)",
     icon: "hammer",
     imageSrc: "/lineup/suspect-1.png",
-    chestPatchOffset: { x: 53.2, y: 27.7 },
+    chestPatchOffset: { x: 55.3, y: 28.0 },
     placardOffset: { x: 0, y: 0 },
     placardTilt: -1.2,
 
-    /* [EDIT: Suspect 1 - Interrogation Report & Bio] */
-    charge: "Caught deploying unprompted architecture refactors at 3:14 AM without a staging warning.",
-    bio: "Obsessive systems craftsperson dedicated to zero-dependency utilities, sub-50ms render loops, and resilient full-stack workflows. Believes that if a component cannot be reasoned about in one breath, it must be rewritten.",
-    skills: ["TypeScript", "React & TanStack", "Node.js & Python", "Tailwind CSS", "Systems Design"],
+    // SOURCE: Built from real projects in src/data/projectsFallback.ts (Road Side Aid Pro across 38 TN districts & Hostel Buddy)
+    charge: "Charged with: deploying responsive emergency GPS apps and smart campus systems across Tamil Nadu.",
 
-    /* [EDIT: Suspect 1 - Projects Dossier] */
+    // SOURCE: src/components/portfolio/AboutDossier.tsx (Bio 1 "HOW I WORK" & Passport "B.E. Computer Science & Engineering")
+    bio: "CSE student who learns by building. Give him a messy problem and his first move is to get something working, then break it, fix it, and keep improving it until it holds up. Across React, Node.js and Python, he builds tools that stay simple enough for anyone to use.",
+
+    // SOURCE: src/data/projectsFallback.ts (Road Side Aid Pro & Hostel Buddy tech stacks)
+    skills: ["React", "TypeScript", "Node.js", "Python", "Tailwind CSS", "Supabase"],
+
+    // SOURCE: Real repositories in src/data/projectsFallback.ts
     projects: [
       {
-        title: "Aswin Creative Portfolio",
-        oneLiner: "Detective-themed interactive portfolio built with 60fps frame loops and zero-lag layouts.",
-        link: "#home",
+        title: "Road Side Aid Pro",
+        oneLiner: "Mobile-first emergency web application with live GPS geolocation and nearest responder mapping across 38 districts of Tamil Nadu.",
+        link: "https://github.com/aswin-070807/roadside-aid-pro",
       },
       {
-        title: "Agentic Inference Engine",
-        oneLiner: "Parallel workflow orchestrator streaming real-time LLM execution graphs.",
-        link: "#projects",
+        title: "Hostel Buddy",
+        oneLiner: "Automated digital leave request and approval workflow replacing physical paper slips and queue ledgers in college hostels.",
+        link: "https://github.com/aswin-070807/hostel-buddy",
       },
     ],
 
-    /* [EDIT: Suspect 1 - Associated Records / Links] */
+    // SOURCE: Real profiles in src/components/portfolio/AboutDossier.tsx
     links: [
-      { label: "Inspect Projects", url: "#projects" },
       { label: "GitHub Profile", url: "https://github.com/aswin-070807" },
+      { label: "LeetCode Profile", url: "https://leetcode.com/u/Aswin787" },
     ],
   },
   {
-    /* [EDIT: Suspect 2 - Core Identifiers] */
+    // SOURCE: Prompt Specification & src/data/achievementsFallback.ts
     id: "competitor",
     number: 2,
     code: "ASW-0002",
@@ -96,37 +97,46 @@ export const SUSPECTS_DATA: SuspectData[] = [
     accentGlow: "rgba(245, 158, 11, 0.35)",
     icon: "trophy",
     imageSrc: "/lineup/suspect-2.png",
-    chestPatchOffset: { x: 51.7, y: 27.2 },
+    chestPatchOffset: { x: 52.1, y: 27.4 },
     placardOffset: { x: 0, y: 8 },
     placardTilt: 1.5,
 
-    /* [EDIT: Suspect 2 - Interrogation Report & Bio] */
-    charge: "Suspected of podium finishes in hackathons under extreme 36-hour caffeine conditions.",
-    bio: "Engineered for high-stakes problem sprints and rapid MVP turnarounds. Holds a verified record of national hackathon qualifications, podium finishes, and speed-prototyping under intense time constraints.",
-    skills: ["Rapid Prototyping", "Data Structures & Algos", "Hackathon Strategy", "Live Demo Pitching", "Cloud Deployments"],
+    // SOURCE: Real competitive wins in src/data/achievementsFallback.ts (Cases 001 & 002)
+    charge: "Charged with: winning Silver at an International Innovation Expo and storming the IIT Madras Neurohack finals.",
 
-    /* [EDIT: Suspect 2 - Projects Dossier] */
+    // SOURCE: src/components/portfolio/AboutDossier.tsx (Bio 2 "UNDER PRESSURE")
+    bio: "Hackathons gave him time management and the ability to prove solutions under pressure. In a 72-hour build with the clock running down, you learn fast what actually matters in a demo. Regular practice on CodeChef and LeetCode built the habit of testing solutions harder than anyone else.",
+
+    // SOURCE: Verified coding profiles in src/components/portfolio/AboutDossier.tsx (VERIFIED_PROFILES)
+    skills: ["Algorithm Design", "CodeChef (aswina_srit)", "LeetCode (Aswin787)", "Rapid Prototyping", "Hackathon Strategy"],
+
+    // SOURCE: Real achievement case files and verified Google Drive certificates in src/data/achievementsFallback.ts
     projects: [
       {
         title: "International Innovation Expo",
-        oneLiner: "Silver Medalist system design for edge device automation (Univ. Malaysia Perlis).",
-        link: "#achievements",
+        oneLiner: "Silver Medal for System Design at University Malaysia, Perlis (Global Level Final).",
+        link: "https://drive.google.com/file/d/1-_yQE57EmKOvMrpnJ-fQNDmfNiu1G0xI/view?usp=sharing",
       },
       {
-        title: "IIT Madras Neurohack",
-        oneLiner: "Top 25 National Finalist building real-time sensor processing pipelines.",
-        link: "#achievements",
+        title: "Neurohack 2025: IITM",
+        oneLiner: "Top 25 National Finalist at Indian Institute of Technology Madras (IITM).",
+        link: "https://drive.google.com/file/d/1zU6a8kMVFBRUBC4PaO40uFIRf4SMqV8n/view?usp=sharing",
+      },
+      {
+        title: "Technova 26 CIT National Hackathon",
+        oneLiner: "Top 30 National Finalist hosted by Coimbatore Institute of Technology.",
+        link: "https://drive.google.com/file/d/13_XYkVth6Z56uO89eMt9OUCvhLllS5C1/view?usp=sharing",
       },
     ],
 
-    /* [EDIT: Suspect 2 - Associated Records / Links] */
+    // SOURCE: Real profile tags in src/components/portfolio/AboutDossier.tsx
     links: [
-      { label: "Case Files / Honors", url: "#achievements" },
-      { label: "Certificates Vault", url: "#certifications" },
+      { label: "CodeChef Profile", url: "https://www.codechef.com/users/aswina_srit" },
+      { label: "LeetCode Profile", url: "https://leetcode.com/u/Aswin787" },
     ],
   },
   {
-    /* [EDIT: Suspect 3 - Core Identifiers] */
+    // SOURCE: Prompt Specification ("REAL CONTENT SO FAR") & src/components/portfolio/AboutDossier.tsx
     id: "leader",
     number: 3,
     code: "ASW-0003",
@@ -140,37 +150,40 @@ export const SUSPECTS_DATA: SuspectData[] = [
     accentGlow: "rgba(239, 68, 68, 0.35)",
     icon: "flag",
     imageSrc: "/lineup/suspect-3.png",
-    chestPatchOffset: { x: 53.8, y: 27.6 },
+    chestPatchOffset: { x: 55.4, y: 27.8 },
     placardOffset: { x: 0, y: 2 },
     placardTilt: -0.8,
 
-    /* [EDIT: Suspect 3 - Interrogation Report & Bio] */
-    charge: "Caught rallying 50+ engineers to deliver a massive semester launch two weeks ahead of schedule.",
-    bio: "Strategic community operator and squad lead. Bridges deep technical execution with clear milestone roadmaps, cross-functional consensus, and transparent communication across university and developer collectives.",
-    skills: ["Team Orchestration", "Agile Sprints", "Product Roadmapping", "Public Speaking", "Community Operations"],
+    // SOURCE: User prompt specification ("REAL CONTENT SO FAR")
+    charge: "Charged with: leading team 'Byte Blazers' through 15+ hackathons and clinching two internal SIH top-5 spots.",
 
-    /* [EDIT: Suspect 3 - Projects Dossier] */
+    // SOURCE: User prompt specification ("REAL CONTENT SO FAR") + AboutDossier.tsx (Bio 3)
+    bio: "Team lead of 'Byte Blazers'. Has steered the team through 15+ hackathons and two-time internal Smart India Hackathon (SIH) top 5 selections. Enjoys leading a team as much as building inside one.",
+
+    // SOURCE: Team leadership context from prompt & portfolio
+    skills: ["Team Leadership", "Hackathon Strategy", "Smart India Hackathon (SIH)", "Sprint Coordination", "Demo Presenting"],
+
+    // SOURCE: Verified team records specified by user
     projects: [
       {
-        title: "Campus Developer Community",
-        oneLiner: "Scaled collegiate developer guild from 20 to 180+ active peer contributors.",
-        link: "#experience",
+        title: "Byte Blazers Hackathon Sprints",
+        oneLiner: "Led collegiate team across 15+ competitive national hackathons.",
+        link: "#achievements",
       },
       {
-        title: "E-Cell Tech Summit Infrastructure",
-        oneLiner: "Directed end-to-end technical infrastructure for 1,200 regional attendees.",
-        link: "#experience",
+        title: "Smart India Hackathon (SIH) Internal",
+        oneLiner: "Two-time Top 5 internal selection representing collegiate engineering cohort.",
+        link: "#achievements",
       },
     ],
 
-    /* [EDIT: Suspect 3 - Associated Records / Links] */
+    // SOURCE: Verified profile in src/components/portfolio/AboutDossier.tsx
     links: [
-      { label: "Service Records", url: "#experience" },
-      { label: "Leadership Dossier", url: "#contact" },
+      { label: "LinkedIn Profile", url: "https://www.linkedin.com/in/aswin-a-709091293" },
     ],
   },
   {
-    /* [EDIT: Suspect 4 - Core Identifiers] */
+    // SOURCE: Prompt Specification & src/data/experienceFallback.ts
     id: "mentor",
     number: 4,
     code: "ASW-0004",
@@ -184,37 +197,41 @@ export const SUSPECTS_DATA: SuspectData[] = [
     accentGlow: "rgba(16, 185, 129, 0.35)",
     icon: "compass",
     imageSrc: "/lineup/suspect-4.png",
-    chestPatchOffset: { x: 54.0, y: 27.7 },
+    chestPatchOffset: { x: 54.2, y: 27.8 },
     placardOffset: { x: 0, y: 4 },
     placardTilt: 1.0,
 
-    /* [EDIT: Suspect 4 - Interrogation Report & Bio] */
-    charge: "Repeatedly caught providing unsolicited breakthrough debugging guidance to struggling junior peers.",
-    bio: "Technical mentor and knowledge architect. Firm believer that true mastery of software engineering means explaining distributed systems in plain English. Dedicated to making complex ideas immediately accessible.",
-    skills: ["1-on-1 Code Review", "Curriculum Design", "Pair Programming", "Technical Writing", "Knowledge Sharing"],
+    // SOURCE: src/data/experienceFallback.ts (Service Record 001 - Unstop Mentor & SR 002 - GeeksforGeeks Campus Representative)
+    charge: "Charged with: guiding aspiring developers on Unstop and running AI learning workshops with GeeksforGeeks.",
 
-    /* [EDIT: Suspect 4 - Projects Dossier] */
+    // SOURCE: src/data/experienceFallback.ts (Direct quote from Service Record descriptions)
+    bio: "Active mentor on Unstop, guiding students and young professionals in skill development, career planning, and personal growth. Also serves as GeeksforGeeks Campus Representative, promoting AI learning initiatives and student workshops across campus.",
+
+    // SOURCE: src/data/experienceFallback.ts
+    skills: ["Career Planning", "Skill Development", "Workshop Facilitation", "Community Engagement", "Peer Guidance"],
+
+    // SOURCE: Real service records in src/data/experienceFallback.ts
     projects: [
       {
-        title: "Peer Learning Circles",
-        oneLiner: "Weekly problem-solving workshops demystifying algorithms, Git internals, and clean code.",
-        link: "#education",
+        title: "Unstop Mentorship Track",
+        oneLiner: "Providing guidance on skill development, career roadmaps, and personal growth for young professionals.",
+        link: "https://unstop.com/mentor/aswin07?ref=kpbIAVR0",
       },
       {
-        title: "Open Source Onboarding Primer",
-        oneLiner: "Step-by-step primer that helped 30+ beginners submit and land their first merged PR.",
-        link: "#skills",
+        title: "GeeksforGeeks Campus Initiatives",
+        oneLiner: "Promoted AI learning initiatives and organized student workshops to strengthen peer tech engagement.",
+        link: "#experience",
       },
     ],
 
-    /* [EDIT: Suspect 4 - Associated Records / Links] */
+    // SOURCE: Verified mentor link from src/data/experienceFallback.ts
     links: [
-      { label: "Academic Records", url: "#education" },
-      { label: "Skill Checkpoints", url: "#skills" },
+      { label: "Unstop Mentor Profile", url: "https://unstop.com/mentor/aswin07?ref=kpbIAVR0" },
+      { label: "LinkedIn Profile", url: "https://www.linkedin.com/in/aswin-a-709091293" },
     ],
   },
   {
-    /* [EDIT: Suspect 5 - Core Identifiers] */
+    // SOURCE: Prompt Specification & src/components/portfolio/AboutDossier.tsx (Bio 3 & Visa Stamp 4)
     id: "poet",
     number: 5,
     code: "ASW-0005",
@@ -228,33 +245,26 @@ export const SUSPECTS_DATA: SuspectData[] = [
     accentGlow: "rgba(168, 85, 247, 0.35)",
     icon: "quill",
     imageSrc: "/lineup/suspect-5.png",
-    chestPatchOffset: { x: 54.9, y: 27.9 },
+    chestPatchOffset: { x: 55.5, y: 28.0 },
     placardOffset: { x: 0, y: 0 },
     placardTilt: -1.0,
 
-    /* [EDIT: Suspect 5 - Interrogation Report & Bio] */
-    charge: "Refusing to leave any sentence unpolished and crafting technical copy with dangerous lyrical precision.",
-    bio: "Wordsmith and creative writer with published poetry and anthologized essays. Treats linguistic clarity as the bedrock of clean APIs, intuitive UX micro-copy, and memorable digital experiences.",
-    skills: ["Creative Writing", "Technical Copywriting", "Micro-copy & Tone", "Narrative Design", "Editorial Polish"],
+    // SOURCE: src/components/portfolio/AboutDossier.tsx (Bio 3 "OFF THE KEYBOARD")
+    charge: "Charged with: mercilessly cutting any sentence or line of code that fails to land.",
 
-    /* [EDIT: Suspect 5 - Projects Dossier] */
-    projects: [
-      {
-        title: "Published Poetry Anthologies",
-        oneLiner: "Printed collections exploring memory, craftsmanship, architecture, and time.",
-        link: "#contact",
-      },
-      {
-        title: "The Craftsmanship Essays",
-        oneLiner: "Essays dissecting the aesthetic and engineering parallels between prose and software.",
-        link: "#contact",
-      },
-    ],
+    // SOURCE: src/components/portfolio/AboutDossier.tsx (Bio 3 & Visa Stamp 4)
+    bio: "Away from the keyboard, Aswin writes poetry. It keeps him honest about words: if a sentence doesn't land, it gets cut. That editorial discipline directly informs his habit of writing clean, uncluttered software and clear user copy.",
 
-    /* [EDIT: Suspect 5 - Associated Records / Links] */
+    // SOURCE: Linguistic and editorial skills referenced in portfolio
+    skills: ["Creative Writing", "Poetry", "Linguistic Precision", "Concise Editing", "Reflective Prose"],
+
+    // NOTE: In compliance with the rule "If a field has no real data, do NOT render that block at all",
+    // we omit fake book/anthology claims because no published books exist in the portfolio.
+    projects: [],
+
+    // SOURCE: Verified profile in src/components/portfolio/AboutDossier.tsx
     links: [
-      { label: "Read Dossier", url: "#contact" },
-      { label: "Download Resume", url: "/Aswin_A_Resume.pdf" },
+      { label: "LinkedIn Profile", url: "https://www.linkedin.com/in/aswin-a-709091293" },
     ],
   },
 ];
