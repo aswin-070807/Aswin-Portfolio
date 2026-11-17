@@ -5,199 +5,176 @@ import { Placard } from "./Placard";
 interface SuspectProps {
   suspect: SuspectData;
   isActive: boolean;
-  isDimmed: boolean;
-  onSelect: () => void;
-  onKeyDown: (e: React.KeyboardEvent) => void;
+  isAnyActive: boolean;
+  onSelect: (suspect: SuspectData) => void;
+  onHover: (suspect: SuspectData | null) => void;
+  reduceMotion?: boolean;
 }
 
-export const Suspect: React.FC<SuspectProps> = ({
+export function Suspect({
   suspect,
   isActive,
-  isDimmed,
+  isAnyActive,
   onSelect,
-  onKeyDown,
-}) => {
-  // Height proportion calculation relative to 175cm baseline
-  // 169cm to 181cm range
-  const heightScale = suspect.heightCm / 175;
+  onHover,
+  reduceMotion = false,
+}: SuspectProps) {
+  // Head top lands exactly at stated heightCm on the height chart!
+  // In the 400x900 canvas, feet are at y=880 (20px up from bottom) and head is at y=60 (820px tall).
+  // Total canvas height = (heightCm * pxPerCm) * (900 / 820).
+  const containerHeightStyle = `calc(var(--px-per-cm, 2.4px) * ${suspect.heightCm} * (900 / 820))`;
+  const containerBottomStyle = `calc(var(--floor-offset, 48px) - (var(--px-per-cm, 2.4px) * ${suspect.heightCm} * (20 / 820)))`;
 
-  // Render prop SVG icon
-  const renderProp = () => {
-    switch (suspect.id) {
-      case "builder":
-        // Laptop
-        return (
-          <g transform="translate(18, 140)">
-            <rect x="0" y="0" width="30" height="20" rx="2" fill="#38BDF8" opacity="0.9" />
-            <rect x="2" y="2" width="26" height="15" rx="1" fill="#0B1F4B" />
-            <path d="M-4 20 L34 20 L32 23 L-2 23 Z" fill="#94A3B8" />
-            <line x1="6" y1="7" x2="20" y2="7" stroke="#38BDF8" strokeWidth="1.5" />
-            <line x1="6" y1="11" x2="16" y2="11" stroke="#38BDF8" strokeWidth="1.5" />
-          </g>
-        );
-      case "competitor":
-        // Trophy
-        return (
-          <g transform="translate(16, 128)">
-            <path
-              d="M6 4 L22 4 L20 18 C20 24 14 28 14 28 C14 28 8 24 8 18 Z"
-              fill="#FFD21F"
-            />
-            <path
-              d="M6 7 C2 7 2 15 6 15 M22 7 C26 7 26 15 22 15"
-              fill="none"
-              stroke="#FFD21F"
-              strokeWidth="2"
-            />
-            <rect x="12" y="28" width="4" height="6" fill="#D97706" />
-            <rect x="8" y="34" width="12" height="4" rx="1" fill="#78350F" />
-            <polygon points="14,9 15.5,13 19.5,13 16.5,15.5 17.5,19.5 14,17 10.5,19.5 11.5,15.5 8.5,13 12.5,13" fill="#FFFFFF" opacity="0.8" />
-          </g>
-        );
-      case "leader":
-        // Megaphone
-        return (
-          <g transform="translate(18, 134) rotate(-15)">
-            <polygon points="0,10 24,0 24,24 0,14" fill="#F87171" />
-            <rect x="-4" y="9" width="4" height="6" rx="1" fill="#DC2626" />
-            <path d="M8 14 L8 24 L13 24 L13 14" fill="#991B1B" />
-            <ellipse cx="24" cy="12" rx="3" ry="12" fill="#FECACA" />
-          </g>
-        );
-      case "mentor":
-        // Notebook / Clipboard
-        return (
-          <g transform="translate(20, 135) rotate(12)">
-            <rect x="0" y="0" width="22" height="30" rx="2" fill="#E2E8F0" stroke="#0B1F4B" strokeWidth="1.5" />
-            <line x1="5" y1="8" x2="17" y2="8" stroke="#3B82F6" strokeWidth="1.5" />
-            <line x1="5" y1="13" x2="17" y2="13" stroke="#94A3B8" strokeWidth="1.5" />
-            <line x1="5" y1="18" x2="14" y2="18" stroke="#94A3B8" strokeWidth="1.5" />
-            <line x1="5" y1="23" x2="16" y2="23" stroke="#94A3B8" strokeWidth="1.5" />
-            <circle cx="11" cy="3" r="2" fill="#EF4444" />
-          </g>
-        );
-      case "poet":
-        // Pen & parchment page
-        return (
-          <g transform="translate(16, 130)">
-            <rect x="0" y="4" width="20" height="26" rx="1" fill="#FEF3C7" stroke="#D97706" strokeWidth="1" />
-            <line x1="4" y1="9" x2="16" y2="9" stroke="#92400E" strokeWidth="1" />
-            <line x1="4" y1="14" x2="14" y2="14" stroke="#92400E" strokeWidth="1" />
-            <line x1="4" y1="19" x2="16" y2="19" stroke="#92400E" strokeWidth="1" />
-            <path d="M18 -4 L26 18 L24 20 L16 -2 Z" fill="#475569" />
-            <polygon points="26,18 27,23 23,20" fill="#0F172A" />
-          </g>
-        );
-      default:
-        return null;
-    }
-  };
+  // Visual state: active vs dimmed
+  const isDimmed = isAnyActive && !isActive;
 
   return (
     <div
       role="button"
       tabIndex={0}
-      data-cursor-label="INSPECT"
-      aria-label={`Inspect Suspect ${suspect.number}: ${suspect.alias}, Height ${suspect.heightCm} centimeters`}
-      onClick={onSelect}
-      onKeyDown={onKeyDown}
-      className={`relative group flex flex-col items-center cursor-pointer outline-none transition-all duration-300 ${
-        isDimmed ? "opacity-40 filter grayscale-[40%]" : "opacity-100"
-      } ${isActive ? "z-30 -translate-y-2.5 scale-[1.025]" : "z-10 hover:-translate-y-1.5"}`}
+      aria-label={`${suspect.name}, Suspect number ${suspect.number}, Height ${suspect.heightCm} cm. Press Enter to view case file.`}
+      className={`group relative flex flex-col items-center justify-end cursor-pointer outline-none transition-all duration-300 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-sm ${
+        isDimmed ? "opacity-45 filter grayscale-[55%] scale-[0.98]" : "opacity-100 scale-100 z-20"
+      }`}
+      style={{
+        width: "min(280px, 19vw)",
+        height: "100%",
+      }}
+      onClick={() => onSelect(suspect)}
+      onMouseEnter={() => onHover(suspect)}
+      onMouseLeave={() => onHover(null)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(suspect);
+        }
+      }}
     >
-      {/* Overhead Spotlight Cone */}
+      {/* 1. Overhead Spotlight Cone */}
       <div
-        className={`absolute -top-32 w-48 h-64 pointer-events-none transition-opacity duration-500 ${
-          isActive ? "opacity-100" : "opacity-30 group-hover:opacity-75"
+        className={`absolute -top-10 inset-x-0 h-[480px] pointer-events-none transition-opacity duration-300 ${
+          isActive ? "opacity-100" : isDimmed ? "opacity-20" : "opacity-40 group-hover:opacity-80"
         }`}
         style={{
-          background:
-            "conic-gradient(from 180deg at 50% 0%, rgba(255,210,31,0.24) 0deg, rgba(255,255,255,0.4) 30deg, transparent 65deg, transparent 295deg, rgba(255,255,255,0.4) 330deg, rgba(255,210,31,0.24) 360deg)",
-          filter: "blur(10px)",
+          background: `radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 45%, transparent 75%)`,
+          clipPath: "polygon(35% 0%, 65% 0%, 100% 100%, 0% 100%)",
         }}
+        aria-hidden="true"
       />
 
-      {/* Silhouette & Props Wrapper */}
+      {/* 2. Warm Floor Glow Ellipse (Active suspect) */}
       <div
-        className="relative flex flex-col items-center"
+        className={`absolute bottom-8 w-44 h-12 rounded-full pointer-events-none transition-all duration-300 blur-md ${
+          isActive ? "opacity-100 scale-110" : "opacity-0 scale-90"
+        }`}
         style={{
-          transform: `scale(${heightScale})`,
-          transformOrigin: "bottom center",
-          height: "360px",
-          width: "140px",
+          background: `radial-gradient(ellipse, ${suspect.accentGlow} 0%, transparent 70%)`,
+        }}
+        aria-hidden="true"
+      />
+
+      {/* 3. Figure Container (Sized strictly according to stated heightCm) */}
+      <div
+        className={`relative flex items-center justify-center transition-transform duration-300 ${
+          isActive && !reduceMotion
+            ? "-translate-y-2.5 scale-[1.02]"
+            : "group-hover:-translate-y-1.5 group-hover:scale-[1.01]"
+        }`}
+        style={{
+          position: "absolute",
+          bottom: containerBottomStyle,
+          height: containerHeightStyle,
+          width: "auto",
+          aspectRatio: "400 / 900",
         }}
       >
-        <svg
-          viewBox="0 0 140 360"
-          className="w-full h-full drop-shadow-md overflow-visible"
-          fill="none"
+        {/* Figure PNG */}
+        <img
+          src={suspect.imageSrc}
+          alt={`${suspect.name}, suspect ${suspect.number}`}
+          width={400}
+          height={900}
+          loading={suspect.number === 1 ? "eager" : "lazy"}
+          decoding="async"
+          className="w-full h-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.65)] select-none pointer-events-none"
+        />
+
+        {/* Real Case Number overlaid on the jumpsuit's white chest patch */}
+        <div
+          className="absolute font-mono font-black text-slate-900 tracking-tighter select-none pointer-events-none"
+          style={{
+            left: `${suspect.chestPatchOffset.x}%`,
+            top: `${suspect.chestPatchOffset.y}%`,
+            transform: "translate(-50%, -50%)",
+            fontSize: "clamp(6px, 0.75vw, 8.5px)",
+            letterSpacing: "-0.05em",
+          }}
+          aria-hidden="true"
         >
-          {/* Subtle Silhouette Body in Deep Navy */}
-          {/* Head & Hair */}
-          <circle cx="70" cy="46" r="24" fill="#0B1F4B" />
-          {/* Hair silhouette flair */}
-          <path
-            d="M48 42 C48 24 92 24 92 42 C92 32 80 20 68 20 C56 20 48 30 48 42 Z"
-            fill="#081738"
-          />
-          {/* Neck */}
-          <rect x="63" y="68" width="14" height="16" rx="2" fill="#0B1F4B" />
+          {suspect.code}
+        </div>
 
-          {/* Torso & Shoulders */}
-          <path
-            d="M32 94 C32 82 46 80 70 80 C94 80 108 82 108 94 L104 210 L36 210 Z"
-            fill="#0B1F4B"
-          />
-
-          {/* Arms holding placard */}
-          <path
-            d="M32 96 L20 180 L44 186 L48 116 Z"
-            fill="#081738"
-          />
-          <path
-            d="M108 96 L120 180 L96 186 L92 116 Z"
-            fill="#081738"
-          />
-
-          {/* Legs */}
-          <path
-            d="M42 208 L40 330 L58 330 L64 216 Z"
-            fill="#06122E"
-          />
-          <path
-            d="M98 208 L100 330 L82 330 L76 216 Z"
-            fill="#06122E"
-          />
-
-          {/* Shoes */}
-          <path d="M34 328 L58 328 L62 342 L28 342 Z" fill="#0B1F4B" />
-          <path d="M106 328 L82 328 L78 342 L112 342 Z" fill="#0B1F4B" />
-
-          {/* Render Specific Suspect Prop */}
-          {renderProp()}
-        </svg>
-
-        {/* Chest Placard */}
-        <div className="absolute top-[148px] pointer-events-none">
-          <Placard suspect={suspect} isFocused={isActive} />
+        {/* Handheld Lineup Placard Overlay at Chest Level */}
+        <div
+          className="absolute z-30"
+          style={{
+            left: "50%",
+            top: "37.5%",
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <Placard suspect={suspect} />
         </div>
       </div>
 
-      {/* Floor Yellow Taped Stand Mark */}
-      <div className="mt-2 flex flex-col items-center">
+      {/* 4. Glossy Flipped Floor Reflection */}
+      <div
+        className="absolute overflow-hidden pointer-events-none select-none z-10"
+        style={{
+          top: "calc(100% - var(--floor-offset, 48px))",
+          height: "calc(var(--floor-offset, 48px) * 0.9)",
+          width: "min(280px, 19vw)",
+          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 85%)",
+          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 85%)",
+        }}
+        aria-hidden="true"
+      >
         <div
-          className={`w-16 h-7 border-2 border-dashed ${
-            isActive
-              ? "border-[#FFD21F] bg-[#FFD21F]/20 text-[#0B1F4B] font-black scale-105"
-              : "border-[#0B1F4B]/40 bg-[#0B1F4B]/5 text-[#0B1F4B]/70 font-bold"
-          } rounded flex items-center justify-center font-mono text-xs transition-all duration-300 shadow-sm`}
+          className="relative w-full flex items-center justify-center opacity-30 filter blur-[0.8px]"
+          style={{
+            height: containerHeightStyle,
+            transform: "scaleY(-1)",
+            transformOrigin: "top center",
+          }}
         >
-          [ {suspect.number} ]
+          <img
+            src={suspect.imageSrc}
+            alt=""
+            width={400}
+            height={900}
+            className="w-full h-full object-contain select-none"
+          />
         </div>
-        <span className="text-[10px] font-mono text-[#0B1F4B]/60 tracking-wider mt-0.5">
-          STAND {suspect.number}
-        </span>
+      </div>
+
+      {/* 5. Floor Stand Marker: [ X ] STAND X */}
+      <div
+        className="absolute z-20 flex items-center justify-center"
+        style={{
+          bottom: "12px",
+        }}
+      >
+        <div
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm border font-mono text-[9px] sm:text-[10px] tracking-widest transition-all duration-200 ${
+            isActive
+              ? "border-amber-400 bg-amber-400/15 text-amber-300 font-bold shadow-[0_0_10px_rgba(255,210,31,0.35)]"
+              : "border-slate-700/80 bg-slate-900/60 text-slate-400 group-hover:border-slate-500 group-hover:text-slate-200"
+          }`}
+        >
+          <span className="font-bold text-amber-400">[ {suspect.number} ]</span>
+          <span className="hidden sm:inline">STAND {suspect.number}</span>
+        </div>
       </div>
     </div>
   );
-};
+}

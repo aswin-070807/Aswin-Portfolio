@@ -1,185 +1,145 @@
 import React from "react";
 
 interface HeightWallProps {
-  activeHeight: number | null;
-  activeFtIn: string | null;
-  isLocked: boolean;
+  activeHeightCm: number;
+  inView?: boolean;
 }
 
-export const HeightWall: React.FC<HeightWallProps> = ({
-  activeHeight,
-  activeFtIn,
-  isLocked,
-}) => {
-  // Height mapping: 0 cm is at y=440, each cm = 1.85px.
-  // 150 cm -> y = 162.5, 200 cm -> y = 70
-  const getLineY = (cm: number) => 440 - cm * 1.85;
+const HEIGHT_MARKS = [
+  { cm: 200, ftIn: '6\'7"', major: true },
+  { cm: 195, ftIn: '6\'5"', major: false },
+  { cm: 190, ftIn: '6\'3"', major: true },
+  { cm: 185, ftIn: '6\'1"', major: false },
+  { cm: 180, ftIn: '5\'11"', major: true },
+  { cm: 175, ftIn: '5\'9"', major: false },
+  { cm: 170, ftIn: '5\'7"', major: true },
+  { cm: 165, ftIn: '5\'5"', major: false },
+  { cm: 160, ftIn: '5\'3"', major: true },
+  { cm: 155, ftIn: '5\'1"', major: false },
+  { cm: 150, ftIn: '4\'11"', major: true },
+];
 
-  const majorMarks = [
-    { cm: 200, imperial: "6'7\"" },
-    { cm: 190, imperial: "6'3\"" },
-    { cm: 180, imperial: "5'11\"" },
-    { cm: 170, imperial: "5'7\"" },
-    { cm: 160, imperial: "5'3\"" },
-    { cm: 150, imperial: "4'11\"" },
-  ];
-
-  const minorTicks: number[] = [];
-  for (let cm = 148; cm <= 202; cm += 2) {
-    if (cm % 10 !== 0) minorTicks.push(cm);
-  }
-
-  const activeY = activeHeight ? getLineY(activeHeight) : null;
-
+export function HeightWall({ activeHeightCm, inView = true }: HeightWallProps) {
   return (
     <div className="absolute inset-0 pointer-events-none select-none overflow-hidden" aria-hidden="true">
-      <svg
-        className="w-full h-full"
-        viewBox="0 0 1000 480"
-        preserveAspectRatio="none"
-        fill="none"
-      >
-        <defs>
-          <linearGradient id="wallGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#E6F2FA" stopOpacity="0.8" />
-            <stop offset="60%" stopColor="#DFEDF7" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#D5E6F2" stopOpacity="0.95" />
-          </linearGradient>
+      {/* 1. Realistic Cinder-Block / Painted Concrete Texture */}
+      <div className="absolute inset-0 bg-[#2C384A]" />
 
-          <pattern id="brickTexture" width="40" height="20" patternUnits="userSpaceOnUse">
-            <path
-              d="M 0 10 L 40 10 M 20 0 L 20 10 M 40 10 L 40 20 M 0 10 L 0 20"
-              stroke="#0B1F4B"
-              strokeWidth="0.5"
-              strokeOpacity="0.04"
-              fill="none"
-            />
-          </pattern>
+      {/* Concrete block grid using CSS linear gradients */}
+      <div
+        className="absolute inset-0 opacity-40 mix-blend-overlay"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(15, 23, 42, 0.45) 1.5px, transparent 1.5px),
+            linear-gradient(to bottom, rgba(15, 23, 42, 0.45) 1.5px, transparent 1.5px)
+          `,
+          backgroundSize: "160px 48px",
+        }}
+      />
 
-          <filter id="laserGlow" x="-20%" y="-100%" width="140%" height="300%">
-            <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#EF4444" floodOpacity="0.8" />
-          </filter>
-        </defs>
-
-        {/* Wall Background */}
-        <rect width="1000" height="440" fill="url(#wallGradient)" />
-        <rect width="1000" height="440" fill="url(#brickTexture)" />
-
-        {/* Minor Ticks */}
-        {minorTicks.map((cm) => {
-          const y = getLineY(cm);
-          const isMid = cm % 10 === 5;
-          return (
-            <g key={cm}>
-              {/* Left tick */}
-              <line
-                x1="60"
-                y1={y}
-                x2={isMid ? "105" : "90"}
-                y2={y}
-                stroke="#0B1F4B"
-                strokeWidth={isMid ? 1.5 : 0.9}
-                strokeOpacity={isMid ? 0.35 : 0.2}
-              />
-              {/* Right tick */}
-              <line
-                x1={isMid ? "895" : "910"}
-                y1={y}
-                x2="940"
-                y2={y}
-                stroke="#0B1F4B"
-                strokeWidth={isMid ? 1.5 : 0.9}
-                strokeOpacity={isMid ? 0.35 : 0.2}
-              />
-            </g>
-          );
-        })}
-
-        {/* Major Horizontal Lines & Labels */}
-        {majorMarks.map((mark) => {
-          const y = getLineY(mark.cm);
-          return (
-            <g key={mark.cm}>
-              {/* Full horizontal line */}
-              <line
-                x1="60"
-                y1={y}
-                x2="940"
-                y2={y}
-                stroke="#0B1F4B"
-                strokeWidth="1.8"
-                strokeOpacity="0.32"
-                strokeDasharray="6 3"
-              />
-              {/* Metric label left */}
-              <text
-                x="52"
-                y={y + 4}
-                textAnchor="end"
-                fontFamily="monospace"
-                fontSize="12"
-                fontWeight="700"
-                fill="#0B1F4B"
-                fillOpacity="0.75"
-              >
-                {mark.cm} CM
-              </text>
-              {/* Imperial label right */}
-              <text
-                x="948"
-                y={y + 4}
-                textAnchor="start"
-                fontFamily="monospace"
-                fontSize="12"
-                fontWeight="700"
-                fill="#0B1F4B"
-                fillOpacity="0.75"
-              >
-                {mark.imperial}
-              </text>
-            </g>
-          );
-        })}
-
-        {/* Floor Line */}
-        <rect x="0" y="440" width="1000" height="40" fill="#0B1F4B" fillOpacity="0.12" />
-        <line x1="0" y1="440" x2="1000" y2="440" stroke="#0B1F4B" strokeWidth="3" strokeOpacity="0.6" />
-
-        {/* Active Red Laser Measurement Line */}
-        {activeY !== null && isLocked && (
-          <g filter="url(#laserGlow)" className="transition-all duration-300">
-            <line
-              x1="20"
-              y1={activeY}
-              x2="980"
-              y2={activeY}
-              stroke="#EF4444"
-              strokeWidth="2.5"
-            />
-            {/* Center target lock badge */}
-            <rect
-              x="440"
-              y={activeY - 14}
-              width="120"
-              height="28"
-              rx="4"
-              fill="#EF4444"
-            />
-            <text
-              x="500"
-              y={activeY + 4}
-              textAnchor="middle"
-              fontFamily="monospace"
-              fontSize="11"
-              fontWeight="900"
-              fill="#FFFFFF"
-              letterSpacing="0.08em"
-            >
-              {activeHeight} CM · {activeFtIn}
-            </text>
-          </g>
-        )}
+      {/* Subtle concrete grain noise via inline SVG */}
+      <svg className="absolute inset-0 w-full h-full opacity-[0.14] mix-blend-soft-light">
+        <filter id="concrete-noise">
+          <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" stitchTiles="stitch" />
+          <feColorMatrix type="matrix" values="0 0 0 0 1   0 0 0 0 1   0 0 0 0 1  0 0 0 0.8 0" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#concrete-noise)" />
       </svg>
+
+      {/* Vignette and depth gradient */}
+      <div className="absolute inset-0 bg-radial from-transparent via-[#0B1528]/40 to-[#070D1B]/85" />
+
+      {/* 2. Height Chart Scale (150cm to 200cm) */}
+      <div className="absolute inset-x-0 bottom-0 top-0">
+        {HEIGHT_MARKS.map(({ cm, ftIn, major }) => (
+          <div
+            key={cm}
+            className="absolute inset-x-0 flex items-center justify-between"
+            style={{
+              bottom: `calc(var(--floor-offset, 48px) + (${cm} * var(--px-per-cm, 2.4px)))`,
+            }}
+          >
+            {/* Left CM label + major tick */}
+            <div className="flex items-center gap-1.5 pl-3 sm:pl-5">
+              <span
+                className={`font-mono text-[9px] sm:text-[11px] tabular-nums tracking-widest ${
+                  major
+                    ? "font-bold text-slate-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+                    : "font-normal text-slate-400/60"
+                }`}
+              >
+                {cm} cm
+              </span>
+              <div
+                className={`h-[1px] bg-slate-400 ${
+                  major ? "w-6 sm:w-10 opacity-70" : "w-3 sm:w-5 opacity-40"
+                }`}
+              />
+            </div>
+
+            {/* Horizontal guideline spanning the entire wall */}
+            <div
+              className={`flex-1 mx-2 sm:mx-4 border-b ${
+                major
+                  ? "border-slate-400/25 border-dashed"
+                  : "border-slate-500/10 border-dotted"
+              }`}
+            />
+
+            {/* Right Feet-Inches label + major tick */}
+            <div className="flex items-center gap-1.5 pr-3 sm:pl-0 pr-3 sm:pr-5">
+              <div
+                className={`h-[1px] bg-slate-400 ${
+                  major ? "w-6 sm:w-10 opacity-70" : "w-3 sm:w-5 opacity-40"
+                }`}
+              />
+              <span
+                className={`font-mono text-[9px] sm:text-[11px] tabular-nums tracking-widest ${
+                  major
+                    ? "font-bold text-slate-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+                    : "font-normal text-slate-400/60"
+                }`}
+              >
+                {ftIn}
+              </span>
+            </div>
+          </div>
+        ))}
+
+        {/* 3. Laser Height Lock Guide Line for Active Suspect */}
+        <div
+          className="absolute inset-x-0 h-[2px] transition-all duration-300 ease-out z-10 pointer-events-none"
+          style={{
+            bottom: `calc(var(--floor-offset, 48px) + (${activeHeightCm} * var(--px-per-cm, 2.4px)))`,
+            background: "linear-gradient(90deg, transparent 2%, #EF4444 15%, #F87171 50%, #EF4444 85%, transparent 98%)",
+            boxShadow: "0 0 10px 1px rgba(239, 68, 68, 0.65), 0 0 2px rgba(255, 255, 255, 0.9)",
+            opacity: inView ? 0.95 : 0,
+          }}
+        >
+          {/* Active height badge on laser line */}
+          <div className="absolute right-4 sm:right-7 -top-2.5 px-1.5 py-0.5 rounded-xs bg-red-600/90 text-[8px] sm:text-[9px] font-mono font-bold text-white tracking-widest uppercase shadow-[0_0_8px_rgba(239,68,68,0.8)]">
+            LOCK {activeHeightCm} CM
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Floor Perspective Strip */}
+      <div
+        className="absolute inset-x-0 bottom-0 z-10 border-t border-slate-600/60"
+        style={{
+          height: "var(--floor-offset, 48px)",
+          background: "linear-gradient(to bottom, #1E293B 0%, #0F172A 40%, #0A1120 100%)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 6px 12px rgba(0,0,0,0.6)",
+        }}
+      >
+        {/* Subtle perspective floor floorboards */}
+        <div
+          className="w-full h-full opacity-20"
+          style={{
+            backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 19%, rgba(255,255,255,0.12) 20%)",
+          }}
+        />
+      </div>
     </div>
   );
-};
+}

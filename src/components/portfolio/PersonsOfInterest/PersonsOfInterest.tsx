@@ -3,271 +3,426 @@ import { SUSPECTS_DATA, SuspectData } from "./suspectsData";
 import { HeightWall } from "./HeightWall";
 import { Suspect } from "./Suspect";
 import { RapSheet } from "./RapSheet";
-import { Volume2, Radio, Clock, Shield, Sparkles } from "lucide-react";
+import { Placard } from "./Placard";
+import { ChevronLeft, ChevronRight, Volume2, Sparkles, AlertCircle } from "lucide-react";
 
-const ObservationClock = React.memo(function ObservationClock({ isVisible }: { isVisible: boolean }) {
-  const timeRef = useRef<HTMLSpanElement>(null);
-
+function ObservationClock() {
+  const [time, setTime] = useState("");
   useEffect(() => {
-    if (!isVisible) return;
     const update = () => {
-      if (timeRef.current) {
-        timeRef.current.textContent = new Date().toLocaleTimeString("en-GB", {
+      const now = new Date();
+      setTime(
+        now.toLocaleTimeString("en-US", {
           hour12: false,
           hour: "2-digit",
           minute: "2-digit",
           second: "2-digit",
-        });
-      }
+        }),
+      );
     };
     update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
-  }, [isVisible]);
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return <span>{time || "22:00:00"}</span>;
+}
 
-  return (
-    <span className="flex items-center gap-1 text-white/80">
-      <Clock className="w-3.5 h-3.5" />
-      <span ref={timeRef}>21:45:00</span>
-    </span>
-  );
-});
-
-export const PersonsOfInterest: React.FC = () => {
-  const [selectedSuspect, setSelectedSuspect] = useState<SuspectData | null>(null);
+export function PersonsOfInterest() {
+  const [activeSuspect, setActiveSuspect] = useState<SuspectData>(SUSPECTS_DATA[0]);
   const [hoveredSuspect, setHoveredSuspect] = useState<SuspectData | null>(null);
-  const [inspectedIds, setInspectedIds] = useState<Set<string>>(new Set());
-  const [isFlashing, setIsFlashing] = useState(false);
-  const [isAutoCycling, setIsAutoCycling] = useState(false);
-  const [speakerCommand, setSpeakerCommand] = useState("NUMBER 3, STEP FORWARD");
-  const [isVisible, setIsVisible] = useState(false);
+  const [selectedSuspect, setSelectedSuspect] = useState<SuspectData | null>(null);
+  const [isCaseFileOpen, setIsCaseFileOpen] = useState(false);
+  const [isFlashActive, setIsFlashActive] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [hasSwiped, setHasSwiped] = useState(false);
 
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const autoCycleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
 
-  // IntersectionObserver to pause off-screen execution
+  // Check prefers-reduced-motion
   useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        setIsVisible(entry ? entry.isIntersecting : false);
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduceMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReduceMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
   }, []);
 
-  // Active suspect for the height laser and card display
-  const activeSuspect = selectedSuspect || hoveredSuspect;
+  // Displayed suspect in HUD center speaker pill: hover takes priority over active
+  const currentInterrogationSuspect = hoveredSuspect || activeSuspect;
 
-  const handleSelectSuspect = useCallback((suspect: SuspectData) => {
+  // Camera flash trigger on selection
+  const triggerCameraFlash = useCallback(() => {
+    if (reduceMotion) return;
+    setIsFlashActive(true);
+    setTimeout(() => {
+      setIsFlashActive(false);
+    }, 150);
+  }, [reduceMotion]);
+
+  const handleSelectSuspect = (suspect: SuspectData) => {
+    setActiveSuspect(suspect);
     setSelectedSuspect(suspect);
-    setSpeakerCommand(`SUSPECT #${suspect.number}, STAND STILL`);
-    setInspectedIds((prev) => new Set([...prev, suspect.id]));
-
-    // Quick camera flash effect
-    setIsFlashing(true);
-    setTimeout(() => setIsFlashing(false), 160);
-  }, []);
-
-  const handleHoverSuspect = useCallback((suspect: SuspectData | null) => {
-    setHoveredSuspect(suspect);
-    if (suspect) {
-      setSpeakerCommand(`IDENTIFYING SUSPECT #${suspect.number}...`);
-      setInspectedIds((prev) => new Set([...prev, suspect.id]));
-    } else if (!selectedSuspect) {
-      setSpeakerCommand("NUMBER 3, STEP FORWARD");
-    }
-  }, [selectedSuspect]);
-
-  // Auto-cycle through suspects 1 -> 5 when clicking the intercom / speaker
-  const triggerAutoCycle = () => {
-    if (isAutoCycling) return;
-    setIsAutoCycling(true);
-    let index = 0;
-
-    const cycleNext = () => {
-      if (index >= SUSPECTS_DATA.length) {
-        setIsAutoCycling(false);
-        setSpeakerCommand("ALL SUSPECTS REVIEWED");
-        return;
-      }
-      const s = SUSPECTS_DATA[index];
-      if (s) {
-        handleSelectSuspect(s);
-      }
-      index++;
-      autoCycleTimerRef.current = setTimeout(cycleNext, 1800);
-    };
-
-    cycleNext();
+    triggerCameraFlash();
+    setIsCaseFileOpen(true);
   };
 
-  useEffect(() => {
-    return () => {
-      if (autoCycleTimerRef.current) clearTimeout(autoCycleTimerRef.current);
-    };
-  }, []);
+  const handleCloseCaseFile = () => {
+    setIsCaseFileOpen(false);
+  };
 
-  // Keyboard navigation for lineup
-  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+  // Keyboard navigation for suspects
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isCaseFileOpen) return;
     if (e.key === "ArrowRight") {
       e.preventDefault();
-      const next = (index + 1) % SUSPECTS_DATA.length;
-      const el = document.getElementById(`suspect-${SUSPECTS_DATA[next]?.id}`);
-      el?.focus();
+      const nextIdx = (activeSuspect.number % SUSPECTS_DATA.length);
+      setActiveSuspect(SUSPECTS_DATA[nextIdx]);
+      scrollToMobileIndex(nextIdx);
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
-      const prev = (index - 1 + SUSPECTS_DATA.length) % SUSPECTS_DATA.length;
-      const el = document.getElementById(`suspect-${SUSPECTS_DATA[prev]?.id}`);
-      el?.focus();
-    } else if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      const s = SUSPECTS_DATA[index];
-      if (s) handleSelectSuspect(s);
+      const prevIdx = (activeSuspect.number - 2 + SUSPECTS_DATA.length) % SUSPECTS_DATA.length;
+      setActiveSuspect(SUSPECTS_DATA[prevIdx]);
+      scrollToMobileIndex(prevIdx);
     }
   };
 
-  const allInspected = inspectedIds.size >= SUSPECTS_DATA.length;
+  // Mobile slider scroll tracking to update active suspect
+  const handleSliderScroll = () => {
+    if (!sliderRef.current) return;
+    if (!hasSwiped) setHasSwiped(true);
+
+    const container = sliderRef.current;
+    const scrollCenter = container.scrollLeft + container.clientWidth / 2;
+    const slides = container.children;
+
+    let closestIdx = 0;
+    let minDistance = Infinity;
+
+    for (let i = 0; i < slides.length; i++) {
+      const slide = slides[i] as HTMLElement;
+      const slideCenter = slide.offsetLeft + slide.offsetWidth / 2;
+      const dist = Math.abs(scrollCenter - slideCenter);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIdx = i;
+      }
+    }
+
+    if (SUSPECTS_DATA[closestIdx] && SUSPECTS_DATA[closestIdx].id !== activeSuspect.id) {
+      setActiveSuspect(SUSPECTS_DATA[closestIdx]);
+    }
+  };
+
+  const scrollToMobileIndex = (index: number) => {
+    if (!sliderRef.current) return;
+    const container = sliderRef.current;
+    const targetSlide = container.children[index] as HTMLElement | undefined;
+    if (targetSlide) {
+      const scrollPos = targetSlide.offsetLeft - (container.clientWidth - targetSlide.offsetWidth) / 2;
+      container.scrollTo({ left: scrollPos, behavior: "smooth" });
+    }
+    setActiveSuspect(SUSPECTS_DATA[index]);
+  };
 
   return (
     <section
-      ref={sectionRef}
       id="lineup"
-      aria-label="Persons of Interest Police Lineup"
-      className="relative w-full py-16 px-3 sm:px-6 lg:px-8 bg-gradient-to-b from-sky-50/60 via-[#E8F3FA] to-sky-100/50 overflow-hidden select-none"
+      ref={sectionRef}
+      onKeyDown={handleKeyDown}
+      className="relative w-full py-14 sm:py-20 px-3 sm:px-6 lg:px-8 bg-[#070D1B] text-slate-100 overflow-hidden"
+      aria-label="Police Lineup - Persons of Interest"
     >
-      {/* Top & bottom blending gradients into sky theme */}
-      <div className="absolute top-0 inset-x-0 h-12 bg-gradient-to-b from-[#81D4FA]/20 to-transparent pointer-events-none" />
-      <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-[#81D4FA]/20 to-transparent pointer-events-none" />
-
-      {/* Quick Camera Flash Overlay */}
-      {isFlashing && (
-        <div
-          className="fixed inset-0 z-50 bg-white/70 pointer-events-none transition-opacity duration-150 animate-out fade-out"
-          aria-hidden="true"
-        />
-      )}
+      {/* 1. Camera Flash Overlay (150ms pulse on suspect click) */}
+      <div
+        className={`fixed inset-0 z-50 pointer-events-none bg-white transition-opacity duration-150 ${
+          isFlashActive ? "opacity-95" : "opacity-0"
+        }`}
+        aria-hidden="true"
+      />
 
       <div className="max-w-6xl mx-auto">
-        {/* Section Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#0B1F4B]/10 border border-[#0B1F4B]/20 rounded-full text-xs font-mono font-bold text-[#0B1F4B] tracking-widest uppercase mb-2">
-            <Radio className="w-3.5 h-3.5 text-[#0B1F4B] animate-pulse" />
-            <span>CASE FILE · LINEUP</span>
+        {/* Section Heading & Context Monologue */}
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-400 font-mono text-xs font-bold tracking-widest uppercase mb-3">
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>INTERROGATION ROOM // OBSERVATION RECORD</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#0B1F4B] tracking-tight font-sans">
-            Persons of Interest
+
+          <h2
+            className="text-3xl sm:text-5xl font-black tracking-tight text-white uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+            style={{ fontFamily: "'Barlow Condensed', 'Space Grotesk', Impact, sans-serif" }}
+          >
+            PERSONS OF INTEREST
           </h2>
-          <p className="mt-2 text-sm sm:text-base font-mono text-[#0B1F4B]/75 max-w-lg mx-auto">
-            Identify the suspect. Click or inspect any silhouette to review their record.
+          <p className="mt-2 text-xs sm:text-sm font-mono text-slate-400 max-w-xl mx-auto">
+            Five suspicious profiles detained under suspicion of excessive craft, relentless prototyping, and terminal curiosity. Inspect each record.
           </p>
         </div>
 
-        {/* Observation Room / 2-Way Mirror Frame */}
-        <div className="relative rounded-xl border-4 border-[#0B1F4B]/30 bg-[#0B1F4B]/5 p-2 sm:p-4 shadow-2xl backdrop-blur-sm">
-          {/* Mirror Header Console */}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-[#0B1F4B] text-white rounded-lg font-mono text-xs mb-3 shadow-inner">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 font-bold text-red-400">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+        {/* 2. Realistic Interrogation-Room Observation Window (2-Way Mirror Frame) */}
+        <div
+          className="relative rounded-xl sm:rounded-2xl border-4 sm:border-8 border-[#0B1528] bg-[#0A1020] shadow-[0_25px_60px_rgba(0,0,0,0.8),inset_0_2px_8px_rgba(255,255,255,0.08)] overflow-hidden"
+          style={{
+            // Responsive px-per-cm scale:
+            // Desktop: ~2.4px per cm, Mobile: ~2.0px per cm
+            // This guarantees head tops land strictly on stated height line with full shoes & floor visible!
+            ["--px-per-cm" as any]: "clamp(1.95px, 0.2vw + 1.5px, 2.42px)",
+            ["--floor-offset" as any]: "48px",
+          }}
+        >
+          {/* Subtle 2-Way Mirror Glass Reflection & Vignette Overlay */}
+          <div
+            className="absolute inset-0 pointer-events-none z-30 select-none opacity-40 mix-blend-screen"
+            style={{
+              background: "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 40%, transparent 60%)",
+            }}
+            aria-hidden="true"
+          />
+
+          {/* 3. Top HUD Observation Bar */}
+          <div className="relative z-40 flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-[#070D1B] via-[#0B162C] to-[#070D1B] border-b border-slate-700/80 font-mono select-none">
+            {/* Left: REC [LIVE] */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-red-950/60 border border-red-500/40 text-[10px] sm:text-xs font-bold text-red-400 tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                 <span>REC [LIVE]</span>
-              </span>
-              <span className="text-white/40">|</span>
-              <span className="font-bold tracking-wider text-sky-200">
-                OBSERVATION WINDOW · 2-WAY MIRROR
+              </div>
+              <span className="hidden md:inline text-[11px] font-semibold text-slate-400 tracking-wider">
+                OBSERVATION WINDOW • 2-WAY MIRROR
               </span>
             </div>
 
-            {/* Intercom Speaker Grille Button */}
-            <button
-              onClick={triggerAutoCycle}
-              disabled={isAutoCycling}
-              title="Click to cycle suspects automatically"
-              className="flex items-center gap-2 px-3 py-1 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded transition-all text-[#FFD21F] font-bold"
+            {/* Center: Intercom Speaker Pill (NUMBER X, STEP FORWARD) */}
+            <div
+              className="flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full bg-slate-900 border border-amber-400/50 shadow-[0_0_12px_rgba(255,210,31,0.2)] text-amber-400 font-bold text-[10px] sm:text-xs tracking-wider"
+              aria-live="polite"
             >
-              <Volume2 className={`w-3.5 h-3.5 ${isAutoCycling ? "animate-bounce" : ""}`} />
-              <span className="truncate max-w-[160px] sm:max-w-xs">{speakerCommand}</span>
-            </button>
+              <Volume2 className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span>NUMBER {currentInterrogationSuspect.number}, STEP FORWARD</span>
+            </div>
 
-            <div className="flex items-center gap-3">
-              <ObservationClock isVisible={isVisible} />
-              <span className="px-2 py-0.5 bg-[#FFD21F] text-[#0B1F4B] font-black rounded text-[10px]">
+            {/* Right: Live Digital Clock & Room Badge */}
+            <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-mono text-slate-300">
+              <span className="tabular-nums tracking-widest text-slate-400 hidden xs:inline">
+                <ObservationClock />
+              </span>
+              <span className="px-2 py-0.5 rounded-xs bg-amber-400/20 border border-amber-400/40 text-amber-400 font-bold">
                 ROOM 04
               </span>
             </div>
           </div>
 
-          {/* Lineup Stage Container */}
-          <div className="relative w-full h-[520px] sm:h-[500px] rounded-lg overflow-hidden border border-[#0B1F4B]/20 shadow-inner flex flex-col justify-end">
-            {/* SVG Height Wall Background */}
-            <HeightWall
-              activeHeight={activeSuspect?.heightCm || null}
-              activeFtIn={activeSuspect?.heightFtIn || null}
-              isLocked={Boolean(activeSuspect)}
-            />
+          {/* 4. The Stage (Height Chart + Concrete Wall + Figures) */}
+          <div className="relative w-full h-[470px] sm:h-[540px] lg:h-[570px] overflow-hidden">
+            {/* Wall & Height Chart background */}
+            <HeightWall activeHeightCm={currentInterrogationSuspect.heightCm} />
 
-            {/* Suspects Silhouettes Row */}
-            <div className="relative z-10 w-full px-2 sm:px-6 flex items-end justify-around pb-2">
-              {SUSPECTS_DATA.map((suspect, idx) => (
-                <div
+            {/* 4A. DESKTOP / TABLET LINEUP (>= 768px): All 5 figures in line */}
+            <div className="hidden md:flex absolute inset-0 z-20 items-end justify-around px-4 lg:px-8 pb-0">
+              {SUSPECTS_DATA.map((suspect) => (
+                <Suspect
                   key={suspect.id}
-                  id={`suspect-${suspect.id}`}
-                  onMouseEnter={() => handleHoverSuspect(suspect)}
-                  onMouseLeave={() => handleHoverSuspect(null)}
-                >
-                  <Suspect
-                    suspect={suspect}
-                    isActive={activeSuspect?.id === suspect.id}
-                    isDimmed={Boolean(activeSuspect && activeSuspect.id !== suspect.id)}
-                    onSelect={() => handleSelectSuspect(suspect)}
-                    onKeyDown={(e) => handleKeyDown(e, idx)}
-                  />
-                </div>
+                  suspect={suspect}
+                  isActive={activeSuspect.id === suspect.id}
+                  isAnyActive={Boolean(hoveredSuspect ? hoveredSuspect.id !== suspect.id : false)}
+                  onSelect={handleSelectSuspect}
+                  onHover={setHoveredSuspect}
+                  reduceMotion={reduceMotion}
+                />
               ))}
             </div>
 
-            {/* Sliding Rap-Sheet Dossier Overlay / Modal */}
-            {selectedSuspect && (
+            {/* 4B. MOBILE SWIPE SLIDER (< 768px): CSS Scroll-Snap horizontal slider */}
+            <div className="md:hidden absolute inset-0 z-20 flex flex-col justify-end pb-0">
+              {/* Slider Track with snap-x mandatory */}
               <div
-                className="absolute inset-0 z-40 bg-[#0B1F4B]/40 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in duration-200"
-                onClick={() => setSelectedSuspect(null)}
+                ref={sliderRef}
+                onScroll={handleSliderScroll}
+                className="w-full flex-1 flex items-end overflow-x-auto snap-x snap-mandatory scrollbar-none touch-pan-x overscroll-x-contain pb-0"
+                style={{
+                  scrollPadding: "0 13vw",
+                }}
               >
-                <div onClick={(e) => e.stopPropagation()}>
-                  <RapSheet
-                    suspect={selectedSuspect}
-                    onClose={() => setSelectedSuspect(null)}
-                  />
-                </div>
+                {SUSPECTS_DATA.map((suspect) => {
+                  const isActive = activeSuspect.id === suspect.id;
+                  const containerHeightStyle = `calc(var(--px-per-cm, 2.0px) * ${suspect.heightCm} * (900 / 820))`;
+                  const containerBottomStyle = `calc(var(--floor-offset, 48px) - (var(--px-per-cm, 2.0px) * ${suspect.heightCm} * (20 / 820)))`;
+
+                  return (
+                    <div
+                      key={suspect.id}
+                      className="flex-shrink-0 w-[74vw] snap-center flex flex-col items-center justify-end relative h-full cursor-pointer select-none"
+                      onClick={() => handleSelectSuspect(suspect)}
+                    >
+                      {/* Overhead Mobile Spotlight */}
+                      <div
+                        className={`absolute -top-6 inset-x-0 h-[400px] pointer-events-none transition-opacity duration-300 ${
+                          isActive ? "opacity-95" : "opacity-25"
+                        }`}
+                        style={{
+                          background: `radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 50%, transparent 75%)`,
+                          clipPath: "polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%)",
+                        }}
+                      />
+
+                      {/* Floor Glow */}
+                      <div
+                        className={`absolute bottom-6 w-36 h-10 rounded-full pointer-events-none transition-all duration-300 blur-md ${
+                          isActive ? "opacity-100 scale-105" : "opacity-0"
+                        }`}
+                        style={{
+                          background: `radial-gradient(ellipse, ${suspect.accentGlow} 0%, transparent 70%)`,
+                        }}
+                      />
+
+                      {/* Scaled Figure with Exact Height Scale */}
+                      <div
+                        className={`relative flex items-center justify-center transition-all duration-300 ${
+                          isActive ? "scale-100 opacity-100" : "scale-95 opacity-45 filter grayscale-[55%]"
+                        }`}
+                        style={{
+                          position: "absolute",
+                          bottom: containerBottomStyle,
+                          height: containerHeightStyle,
+                          width: "auto",
+                          aspectRatio: "400 / 900",
+                        }}
+                      >
+                        <img
+                          src={suspect.imageSrc}
+                          alt={`${suspect.name}, suspect ${suspect.number}`}
+                          width={400}
+                          height={900}
+                          loading={suspect.number === 1 ? "eager" : "lazy"}
+                          decoding="async"
+                          className="w-full h-full object-contain filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.7)] pointer-events-none"
+                        />
+
+                        {/* Chest Patch Overlay */}
+                        <div
+                          className="absolute font-mono font-black text-slate-900 tracking-tighter select-none pointer-events-none"
+                          style={{
+                            left: `${suspect.chestPatchOffset.x}%`,
+                            top: `${suspect.chestPatchOffset.y}%`,
+                            transform: "translate(-50%, -50%)",
+                            fontSize: "7px",
+                            letterSpacing: "-0.05em",
+                          }}
+                        >
+                          {suspect.code}
+                        </div>
+
+                        {/* Handheld Placard (Compact on Mobile) */}
+                        <div
+                          className="absolute z-30"
+                          style={{
+                            left: "50%",
+                            top: "37.5%",
+                            transform: "translate(-50%, -50%)",
+                          }}
+                        >
+                          <Placard suspect={suspect} isCompact={true} />
+                        </div>
+                      </div>
+
+                      {/* Stand Marker Button on Mobile Floor */}
+                      <div
+                        className="absolute z-20"
+                        style={{ bottom: "10px" }}
+                      >
+                        <div
+                          className={`flex items-center gap-1 px-2.5 py-0.5 rounded-sm border font-mono text-[9px] tracking-wider transition-colors ${
+                            isActive
+                              ? "border-amber-400 bg-amber-400/20 text-amber-300 font-bold"
+                              : "border-slate-700 bg-slate-900/60 text-slate-400"
+                          }`}
+                        >
+                          <span>[ {suspect.number} ]</span>
+                          <span>STAND {suspect.number}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            )}
+
+              {/* Mobile "SWIPE" Guide Badge (Disappears after first swipe) */}
+              {!hasSwiped && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none animate-bounce">
+                  <div className="px-3 py-1 rounded-full bg-slate-900/90 border border-amber-400/60 text-amber-300 font-mono text-[10px] font-bold tracking-widest uppercase shadow-lg flex items-center gap-1.5">
+                    <span>SWIPE ↔</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 5. Mobile Navigation Bar & Stand Indicators */}
+          <div className="md:hidden flex items-center justify-between px-3 py-2 bg-[#070D1B] border-t border-slate-800">
+            {/* Prev Arrow */}
+            <button
+              onClick={() => {
+                const prev = (activeSuspect.number - 2 + SUSPECTS_DATA.length) % SUSPECTS_DATA.length;
+                scrollToMobileIndex(prev);
+              }}
+              className="p-1.5 rounded-md bg-slate-800 text-slate-300 hover:text-white border border-slate-700"
+              aria-label="Previous Suspect"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* Five Stand Marker Dots: [ 1 ] .. [ 5 ] */}
+            <div className="flex items-center gap-1.5">
+              {SUSPECTS_DATA.map((s, idx) => (
+                <button
+                  key={s.id}
+                  onClick={() => scrollToMobileIndex(idx)}
+                  className={`px-2 py-0.5 rounded-xs font-mono text-[10px] tracking-wider transition-all ${
+                    activeSuspect.id === s.id
+                      ? "bg-amber-400 text-slate-950 font-bold shadow-[0_0_8px_rgba(255,210,31,0.5)]"
+                      : "bg-slate-800/80 text-slate-400 border border-slate-700"
+                  }`}
+                  aria-label={`Go to suspect ${s.number}: ${s.name}`}
+                >
+                  {s.number}
+                </button>
+              ))}
+            </div>
+
+            {/* Next Arrow */}
+            <button
+              onClick={() => {
+                const next = activeSuspect.number % SUSPECTS_DATA.length;
+                scrollToMobileIndex(next);
+              }}
+              className="p-1.5 rounded-md bg-slate-800 text-slate-300 hover:text-white border border-slate-700"
+              aria-label="Next Suspect"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* Reveal Conclusion Line after inspecting all 5 */}
-        <div className="mt-8 min-h-[56px] flex flex-col items-center justify-center text-center">
-          {allInspected ? (
-            <div className="inline-flex flex-col items-center gap-1.5 p-4 rounded-xl bg-[#0B1F4B] text-white shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-500 font-mono">
-              <div className="flex items-center gap-2 text-[#FFD21F] font-black text-sm sm:text-base tracking-wide uppercase">
-                <Sparkles className="w-4 h-4 text-[#FFD21F]" />
-                <span>CASE FILE FINDING: All five suspects are the same person.</span>
-              </div>
-              <p className="text-xs text-white/80">
-                Subject: Aswin A — The Builder, Competitor, Leader, Mentor, and Poet.
-              </p>
-            </div>
-          ) : (
-            <p className="text-xs font-mono text-[#0B1F4B]/60 tracking-wider">
-              INSPECTED {inspectedIds.size} / 5 SUSPECTS · INSPECT ALL TO CONCLUDE THE LINEUP
-            </p>
-          )}
+        {/* 6. Closing Investigator Note (The Punchline) */}
+        <div className="mt-5 text-center">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-slate-900/70 border border-slate-800 text-slate-300 font-mono text-xs shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-slate-400 font-semibold">NOTE FOR RECORD:</span>
+            <span className="text-slate-200">
+              Facial biometric cross-match 99.8%. <strong className="text-amber-400 font-bold">All five suspects are the same person.</strong>
+            </span>
+          </div>
         </div>
       </div>
+
+      {/* 7. Case File Dossier Panel (Side panel on desktop, Bottom sheet on mobile) */}
+      <RapSheet
+        suspect={selectedSuspect}
+        isOpen={isCaseFileOpen}
+        onClose={handleCloseCaseFile}
+        reduceMotion={reduceMotion}
+      />
     </section>
   );
-};
+}
