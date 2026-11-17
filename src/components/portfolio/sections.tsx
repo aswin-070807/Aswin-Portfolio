@@ -44,7 +44,7 @@ import { AchievementsCaseFiles } from "./AchievementsCaseFiles";
 import { EducationAcademicForm } from "./EducationAcademicForm";
 import { ExperienceServiceRecord } from "./ExperienceServiceRecord";
 import { ProjectsEvidenceLocker } from "./ProjectsEvidenceLocker";
-import { ToolkitSurveillance } from "./ToolkitSurveillance";
+import { SkillsPursuit } from "./SkillsPursuit/SkillsPursuit";
 import { CertificationsFloorPlan } from "./CertificationsFloorPlan";
 import { ServicesAgencyDoor } from "./ServicesAgencyDoor";
 import { CaseConclusionFindings } from "./CaseConclusionFindings";
@@ -141,13 +141,13 @@ export function About() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   SKILLS SECTION (Surveillance Control Room CCTV Feeds)
+   SKILLS SECTION (The Pursuit - Scroll-Driven Night Chase)
    ───────────────────────────────────────────────────────────── */
 export function Skills() {
   return (
     <div className="relative w-full bg-transparent">
       <SkyWaveDivider className="mb-4" />
-      <ToolkitSurveillance />
+      <SkillsPursuit />
     </div>
   );
 }
@@ -194,7 +194,11 @@ function Timeline({
   return (
     <ol className="relative ml-4 border-l-2 border-[#0B1F4B]/30 md:ml-6">
       {items.map((it, i) => (
-        <Reveal key={it.title + it.period} delay={i * 0.1} className="relative pb-10 pl-10 last:pb-0">
+        <Reveal
+          key={it.title + it.period}
+          delay={i * 0.1}
+          className="relative pb-10 pl-10 last:pb-0"
+        >
           <li>
             <span className="absolute -left-[1.35rem] top-0 grid h-10 w-10 place-items-center rounded-full border-2 border-[#0B1F4B] bg-white text-[#0B1F4B] shadow-sm">
               <it.icon className="h-4 w-4" />
