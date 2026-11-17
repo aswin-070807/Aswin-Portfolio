@@ -3,15 +3,21 @@ import { motion, useReducedMotion } from "framer-motion";
 
 interface CarProps {
   isStopped?: boolean;
+  isVisible?: boolean;
   className?: string;
 }
 
-export function GetawayCar({ isStopped = false, className = "" }: CarProps) {
+export function GetawayCar({
+  isStopped = false,
+  isVisible = true,
+  className = "",
+}: CarProps) {
   const reduceMotion = useReducedMotion();
+  const shouldAnimate = !reduceMotion && !isStopped && isVisible;
 
   return (
     <motion.div
-      animate={!reduceMotion && !isStopped ? { y: [-1.2, 1.2, -1.2] } : { y: 0 }}
+      animate={shouldAnimate ? { y: [-1.2, 1.2, -1.2] } : { y: 0 }}
       transition={{
         duration: 0.5,
         repeat: Infinity,
@@ -20,9 +26,18 @@ export function GetawayCar({ isStopped = false, className = "" }: CarProps) {
       className={`relative select-none pointer-events-none will-change-transform ${className}`}
       aria-hidden="true"
     >
-      <svg viewBox="0 0 140 44" className="w-28 sm:w-34 md:w-40 h-auto overflow-visible">
+      <svg
+        viewBox="0 0 140 44"
+        className="w-28 sm:w-34 md:w-40 h-auto overflow-visible"
+      >
         <defs>
-          <filter id="taillightGlow" x="-30%" y="-30%" width="160%" height="160%">
+          <filter
+            id="taillightGlow"
+            x="-30%"
+            y="-30%"
+            width="160%"
+            height="160%"
+          >
             <feGaussianBlur stdDeviation="3" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
@@ -91,12 +106,24 @@ export function GetawayCar({ isStopped = false, className = "" }: CarProps) {
 
         {/* Wheels */}
         <g>
-          {/* Rear Wheel */}
-          <circle cx="30" cy="32" r="8.5" fill="#060c16" stroke="#475569" strokeWidth="2" />
+          <circle
+            cx="30"
+            cy="32"
+            r="8.5"
+            fill="#060c16"
+            stroke="#475569"
+            strokeWidth="2"
+          />
           <circle cx="30" cy="32" r="4.5" fill="#1e293b" />
           <circle cx="30" cy="32" r="1.5" fill="#94a3b8" />
-          {/* Front Wheel */}
-          <circle cx="114" cy="32" r="8.5" fill="#060c16" stroke="#475569" strokeWidth="2" />
+          <circle
+            cx="114"
+            cy="32"
+            r="8.5"
+            fill="#060c16"
+            stroke="#475569"
+            strokeWidth="2"
+          />
           <circle cx="114" cy="32" r="4.5" fill="#1e293b" />
           <circle cx="114" cy="32" r="1.5" fill="#94a3b8" />
         </g>
@@ -105,12 +132,17 @@ export function GetawayCar({ isStopped = false, className = "" }: CarProps) {
   );
 }
 
-export function PoliceCar({ isStopped = false, className = "" }: CarProps) {
+export function PoliceCar({
+  isStopped = false,
+  isVisible = true,
+  className = "",
+}: CarProps) {
   const reduceMotion = useReducedMotion();
+  const shouldAnimate = !reduceMotion && !isStopped && isVisible;
 
   return (
     <motion.div
-      animate={!reduceMotion && !isStopped ? { y: [1.2, -1.2, 1.2] } : { y: 0 }}
+      animate={shouldAnimate ? { y: [1.2, -1.2, 1.2] } : { y: 0 }}
       transition={{
         duration: 0.5,
         repeat: Infinity,
@@ -122,17 +154,28 @@ export function PoliceCar({ isStopped = false, className = "" }: CarProps) {
     >
       {/* Red & Blue Siren Ambient Floor Glow (opacity only!) */}
       <motion.div
-        animate={!reduceMotion ? { opacity: [0.2, 0.7, 0.25, 0.8, 0.2] } : { opacity: 0.4 }}
+        animate={
+          shouldAnimate
+            ? { opacity: [0.2, 0.7, 0.25, 0.8, 0.2] }
+            : { opacity: 0.3 }
+        }
         transition={{ duration: 0.55, repeat: Infinity, ease: "easeInOut" }}
         className="absolute -top-6 -left-6 w-32 h-20 rounded-full bg-red-500/25 blur-lg pointer-events-none"
       />
       <motion.div
-        animate={!reduceMotion ? { opacity: [0.7, 0.2, 0.8, 0.25, 0.7] } : { opacity: 0.4 }}
+        animate={
+          shouldAnimate
+            ? { opacity: [0.7, 0.2, 0.8, 0.25, 0.7] }
+            : { opacity: 0.3 }
+        }
         transition={{ duration: 0.55, repeat: Infinity, ease: "easeInOut" }}
         className="absolute -top-6 left-12 w-32 h-20 rounded-full bg-blue-500/30 blur-lg pointer-events-none"
       />
 
-      <svg viewBox="0 0 145 46" className="w-28 sm:w-34 md:w-40 h-auto overflow-visible">
+      <svg
+        viewBox="0 0 145 46"
+        className="w-28 sm:w-34 md:w-40 h-auto overflow-visible"
+      >
         <defs>
           <linearGradient id="policeBody" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#08101e" />
@@ -170,7 +213,14 @@ export function PoliceCar({ isStopped = false, className = "" }: CarProps) {
         />
 
         {/* Push Bar / Nudge Bumper (Front) */}
-        <rect x="139" y="24" width="3" height="11" rx="1" fill="#475569" />
+        <rect
+          x="139"
+          y="24"
+          width="3"
+          height="11"
+          rx="1"
+          fill="#475569"
+        />
 
         {/* Roof Siren Lightbar Bar */}
         <rect
@@ -192,7 +242,7 @@ export function PoliceCar({ isStopped = false, className = "" }: CarProps) {
           height="4.5"
           rx="1"
           fill="#ef4444"
-          animate={!reduceMotion ? { opacity: [0.3, 1, 0.3] } : { opacity: 0.9 }}
+          animate={shouldAnimate ? { opacity: [0.3, 1, 0.3] } : { opacity: 0.9 }}
           transition={{ duration: 0.28, repeat: Infinity }}
         />
 
@@ -204,7 +254,7 @@ export function PoliceCar({ isStopped = false, className = "" }: CarProps) {
           height="4.5"
           rx="1"
           fill="#3b82f6"
-          animate={!reduceMotion ? { opacity: [1, 0.3, 1] } : { opacity: 0.9 }}
+          animate={shouldAnimate ? { opacity: [1, 0.3, 1] } : { opacity: 0.9 }}
           transition={{ duration: 0.28, repeat: Infinity }}
         />
 
@@ -216,10 +266,24 @@ export function PoliceCar({ isStopped = false, className = "" }: CarProps) {
 
         {/* Wheels */}
         <g>
-          <circle cx="32" cy="34" r="8.5" fill="#060c16" stroke="#64748b" strokeWidth="2" />
+          <circle
+            cx="32"
+            cy="34"
+            r="8.5"
+            fill="#060c16"
+            stroke="#64748b"
+            strokeWidth="2"
+          />
           <circle cx="32" cy="34" r="4.5" fill="#1e293b" />
           <circle cx="32" cy="34" r="1.5" fill="#cbd5e1" />
-          <circle cx="116" cy="34" r="8.5" fill="#060c16" stroke="#64748b" strokeWidth="2" />
+          <circle
+            cx="116"
+            cy="34"
+            r="8.5"
+            fill="#060c16"
+            stroke="#64748b"
+            strokeWidth="2"
+          />
           <circle cx="116" cy="34" r="4.5" fill="#1e293b" />
           <circle cx="116" cy="34" r="1.5" fill="#cbd5e1" />
         </g>

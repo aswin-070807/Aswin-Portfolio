@@ -12,6 +12,7 @@ import {
   Education,
   Experience,
   Highlights,
+  PersonsOfInterest,
   Projects,
   Services,
   Skills,
@@ -55,6 +56,7 @@ function Index() {
           <MarqueeTape />
           <About />
           <Skills />
+          <PersonsOfInterest />
           <Achievements />
           <Projects />
           <Experience />

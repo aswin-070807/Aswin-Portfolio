@@ -10,6 +10,21 @@
   }
 }
 
+/* Lightweight CSS Road Scroll Animation */
+@keyframes road-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-road-scroll {
+  animation: road-scroll 2.2s linear infinite;
+  will-change: transform;
+}
+
 @theme inline {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -116,7 +131,7 @@
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
-    overflow-x: hidden;
+    overflow-x: hidden !important;
     max-width: 100vw;
     background-color: #4fc3f7;
   }
@@ -125,7 +140,7 @@
     color: var(--navy-900);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    overflow-x: hidden !important;
     max-width: 100vw;
   }
   h1,
@@ -210,8 +225,8 @@
 }
 @utility orb {
   opacity: var(--orb-opacity);
-  filter: blur(80px);
   border-radius: 9999px;
+  background: radial-gradient(circle, currentColor 0%, transparent 70%);
 }
 @utility thumb-1 {
   background: linear-gradient(135deg, #4fc3f7 0%, #1a3a7a 100%);

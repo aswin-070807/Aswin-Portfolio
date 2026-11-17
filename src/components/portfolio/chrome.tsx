@@ -1,6 +1,6 @@
-import { AnimatePresence, motion, useScroll, useSpring } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUp, Menu, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { navLinks, profile } from "@/data/portfolio";
 import { cn } from "@/lib/utils";
 import { ResumeButton } from "./ResumeButton";
@@ -26,18 +26,50 @@ export function Navbar() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { scrollYProgress } = useScroll();
-  const progress = useSpring(scrollYProgress, { stiffness: 140, damping: 28 });
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const scrolledRef = useRef(false);
+  const activeRef = useRef("home");
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    let ticking = false;
+
+    const onScroll = () => {
+      const isScrolled = window.scrollY > 20;
+      if (isScrolled !== scrolledRef.current) {
+        scrolledRef.current = isScrolled;
+        setScrolled(isScrolled);
+      }
+
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          if (progressBarRef.current) {
+            const total = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = total > 0 ? Math.min(1, Math.max(0, window.scrollY / total)) : 0;
+            progressBarRef.current.style.transform = `scaleX(${progress})`;
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
+
     const obs = new IntersectionObserver(
-      (entries) => entries.forEach((e) => e.isIntersecting && setActive(e.target.id)),
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting && e.target.id && e.target.id !== activeRef.current) {
+            activeRef.current = e.target.id;
+            setActive(e.target.id);
+          }
+        });
+      },
       { rootMargin: "-45% 0px -50% 0px" },
     );
+
     document.querySelectorAll("section[id]").forEach((s) => obs.observe(s));
+
     return () => {
       window.removeEventListener("scroll", onScroll);
       obs.disconnect();
@@ -46,9 +78,10 @@ export function Navbar() {
 
   return (
     <>
-      <motion.div
-        className="fixed inset-x-0 top-0 z-[60] h-[3px] origin-left bg-[#FFD21F] shadow-[0_0_10px_rgba(255,210,31,0.8)]"
-        style={{ scaleX: progress }}
+      <div
+        ref={progressBarRef}
+        className="fixed inset-x-0 top-0 z-[60] h-[3px] origin-left bg-[#FFD21F] shadow-[0_0_10px_rgba(255,210,31,0.8)] pointer-events-none will-change-transform"
+        style={{ transform: "scaleX(0)" }}
       />
       <motion.header
         initial={{ y: -24, opacity: 0 }}
@@ -57,7 +90,7 @@ export function Navbar() {
         className={cn(
           "sticky top-0 z-50 h-[72px] transition-all duration-300",
           scrolled
-            ? "bg-white/92 backdrop-blur-xl border-b border-[#0B1F4B]/10 shadow-[0_4px_24px_rgba(11,31,75,0.05)]"
+            ? "bg-white/96 border-b border-[#0B1F4B]/10 shadow-[0_4px_24px_rgba(11,31,75,0.05)]"
             : "bg-transparent border-b border-transparent",
         )}
       >
@@ -96,18 +129,14 @@ export function Navbar() {
                     {l.label}
                     {/* Yellow active-link underline */}
                     {isCurrent && (
-                      <motion.span
-                        layoutId="nav-underline"
-                        className="absolute inset-x-2.5 bottom-0 h-[3px] rounded-full bg-[#FFD21F]"
-                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      <span
+                        className="absolute inset-x-2.5 bottom-0 h-[3px] rounded-full bg-[#FFD21F] transition-opacity duration-200"
                       />
                     )}
                     {/* Hover indicator when not active */}
                     {isHover && !isCurrent && (
-                      <motion.span
-                        layoutId="nav-hover-underline"
-                        className="absolute inset-x-2.5 bottom-0 h-[2px] rounded-full bg-[#FFD21F]/50"
-                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                      <span
+                        className="absolute inset-x-2.5 bottom-0 h-[2px] rounded-full bg-[#FFD21F]/50 transition-opacity duration-150"
                       />
                     )}
                   </a>

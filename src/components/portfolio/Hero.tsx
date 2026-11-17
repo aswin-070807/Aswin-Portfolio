@@ -408,7 +408,7 @@ export function Hero() {
       aria-label="Hero Introduction"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="relative w-full min-h-[100svh] flex flex-col justify-between overflow-x-clip select-none bg-transparent"
+      className="relative w-full min-h-[100svh] flex flex-col justify-between overflow-x-hidden overflow-y-visible select-none bg-transparent"
       style={{
         paddingTop: "calc(var(--nav-h, 72px) + 24px)",
       }}

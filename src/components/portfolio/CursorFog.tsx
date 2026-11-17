@@ -19,8 +19,8 @@ interface MistPuff {
   isAmbient: boolean;
 }
 
-const MAX_PUFFS = 60;
-const AMBIENT_COUNT = 4;
+const MAX_PUFFS = 18;
+const AMBIENT_COUNT = 2;
 
 function createMistSprite(): HTMLCanvasElement {
   const size = 256;
@@ -63,6 +63,8 @@ export function CursorFog() {
       "ontouchstart" in window ||
       navigator.maxTouchPoints > 0;
 
+    if (isTouch) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -90,34 +92,67 @@ export function CursorFog() {
 
     // Helper to spawn an ambient drifting mist patch
     const spawnAmbientPuff = (): MistPuff => {
-      const startSize = 240 + Math.random() * 120;
-      const endSize = startSize + 80 + Math.random() * 80;
+      const startSize = 220 + Math.random() * 100;
+      const endSize = startSize + 80 + Math.random() * 60;
       return {
         x: Math.random() * width,
-        y: Math.random() * (height * 0.85),
-        vx: (Math.random() - 0.5) * 6,
-        vy: (Math.random() - 0.5) * 4,
+        y: Math.random() * (height * 0.75),
+        vx: (Math.random() - 0.5) * 5,
+        vy: (Math.random() - 0.5) * 3,
         startSize,
         endSize,
         currentSize: startSize,
         rotation: Math.random() * Math.PI * 2,
-        rotSpeed: (Math.random() - 0.5) * 0.05,
-        maxAlpha: 0.035 + Math.random() * 0.03, // faint ambient opacity under 0.08
+        rotSpeed: (Math.random() - 0.5) * 0.04,
+        maxAlpha: 0.035 + Math.random() * 0.025,
         currentAlpha: 0,
         age: 0,
-        lifespan: 8 + Math.random() * 6,
+        lifespan: 7 + Math.random() * 5,
         wobblePhase: Math.random() * Math.PI * 2,
         wobbleSpeed: 0.4 + Math.random() * 0.4,
         isAmbient: true,
       };
     };
 
-    // Initialize 3-4 ambient mist patches
-    for (let i = 0; i < AMBIENT_COUNT; i++) {
-      const p = spawnAmbientPuff();
-      // Stagger initial ages so they don't all appear/fade together
-      p.age = Math.random() * p.lifespan * 0.75;
-      puffs.push(p);
+    let isHeroVisible = true;
+    let animationFrameId: number = 0;
+    let isRunning = false;
+    let prevFrameTime = performance.now();
+
+    const startLoop = () => {
+      if (isRunning) return;
+      isRunning = true;
+      prevFrameTime = performance.now();
+      animationFrameId = requestAnimationFrame(loop);
+    };
+
+    const stopLoop = () => {
+      if (!isRunning) return;
+      isRunning = false;
+      cancelAnimationFrame(animationFrameId);
+      ctx.clearRect(0, 0, width, height);
+    };
+
+    const heroEl = document.getElementById("home") || document.getElementById("hero");
+    let heroObserver: IntersectionObserver | null = null;
+
+    if (heroEl) {
+      heroObserver = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          isHeroVisible = entry ? entry.isIntersecting : false;
+          if (isHeroVisible) {
+            startLoop();
+          } else {
+            puffs.length = 0;
+            stopLoop();
+          }
+        },
+        { threshold: 0 }
+      );
+      heroObserver.observe(heroEl);
+    } else {
+      startLoop();
     }
 
     let lastMouseX = -1;
@@ -125,7 +160,7 @@ export function CursorFog() {
     let lastTime = performance.now();
 
     const onMouseMove = (e: MouseEvent) => {
-      if (isTouch) return;
+      if (!isHeroVisible) return;
 
       const now = performance.now();
       const dt = Math.max(0.001, (now - lastTime) / 1000);
@@ -144,69 +179,69 @@ export function CursorFog() {
       const dy = mouseY - lastMouseY;
       const dist = Math.hypot(dx, dy);
 
-      if (dist > 6) {
-        // Interpolate along movement vector so fast mouse moves have NO gaps
-        const count = Math.min(3, Math.max(1, Math.floor(dist / 32)));
+      if (dist > 8) {
+        const count = Math.min(2, Math.max(1, Math.floor(dist / 40)));
         const speed = dist / dt;
 
         for (let i = 1; i <= count; i++) {
           if (puffs.length >= MAX_PUFFS) {
-            // Drop oldest non-ambient puff if capacity reached
             const oldestIdx = puffs.findIndex((p) => !p.isAmbient);
-            if (oldestIdx >= 0) puffs.splice(oldestIdx, 1);
+            if (oldestIdx >= 0) {
+              puffs.splice(oldestIdx, 1);
+            } else {
+              break;
+            }
           }
 
           const t = i / count;
-          const px = lastMouseX + dx * t + (Math.random() - 0.5) * 18;
-          const py = lastMouseY + dy * t + (Math.random() - 0.5) * 18;
+          const px = lastMouseX + dx * t + (Math.random() - 0.5) * 16;
+          const py = lastMouseY + dy * t + (Math.random() - 0.5) * 16;
 
-          // Drag velocity in direction of cursor movement (air being pushed)
-          const pushStrength = Math.min(24, speed * 0.04);
+          const pushStrength = Math.min(20, speed * 0.035);
           const pushX = (dx / dist) * pushStrength;
           const pushY = (dy / dist) * pushStrength;
 
-          // 2-3 puff size tiers for natural depth (starts 90-140px, grows to 220-320px)
-          const tier = Math.random();
-          const startSize = tier < 0.35 ? 90 + Math.random() * 20 : tier < 0.75 ? 110 + Math.random() * 25 : 130 + Math.random() * 20;
-          const endSize = startSize + 120 + Math.random() * 60;
+          const startSize = 95 + Math.random() * 30;
+          const endSize = startSize + 110 + Math.random() * 50;
 
           puffs.push({
             x: px,
             y: py,
-            vx: pushX + (Math.random() - 0.5) * 8,
-            vy: pushY + (Math.random() - 0.5) * 8,
+            vx: pushX + (Math.random() - 0.5) * 6,
+            vy: pushY + (Math.random() - 0.5) * 6,
             startSize,
             endSize,
             currentSize: startSize,
             rotation: Math.random() * Math.PI * 2,
-            rotSpeed: (Math.random() - 0.5) * 0.12,
-            maxAlpha: 0.08 + Math.random() * 0.03, // capped at ~0.10 so it never obscures content
+            rotSpeed: (Math.random() - 0.5) * 0.1,
+            maxAlpha: 0.08 + Math.random() * 0.03,
             currentAlpha: 0,
             age: 0,
-            lifespan: 2.6 + Math.random() * 0.8, // 2.5 to 3.4 seconds life
+            lifespan: 2.2 + Math.random() * 0.6,
             wobblePhase: Math.random() * Math.PI * 2,
-            wobbleSpeed: 0.8 + Math.random() * 0.6,
+            wobbleSpeed: 0.8 + Math.random() * 0.5,
             isAmbient: false,
           });
         }
 
         lastMouseX = mouseX;
         lastMouseY = mouseY;
+
+        if (!isRunning && isHeroVisible) {
+          startLoop();
+        }
       }
     };
 
     window.addEventListener("mousemove", onMouseMove, { passive: true });
 
-    let animationFrameId: number;
-    let prevFrameTime = performance.now();
-
     const loop = (currentTime: number) => {
-      animationFrameId = requestAnimationFrame(loop);
-
-      if (document.hidden) {
-        prevFrameTime = currentTime;
+      if (!isHeroVisible || document.hidden) {
+        isRunning = false;
         return;
       }
+
+      animationFrameId = requestAnimationFrame(loop);
 
       const deltaSec = Math.min(0.1, (currentTime - prevFrameTime) / 1000);
       prevFrameTime = currentTime;
@@ -224,7 +259,6 @@ export function CursorFog() {
 
         if (p.age >= p.lifespan) {
           if (p.isAmbient) {
-            // Respawn ambient puff smoothly
             puffs[i] = spawnAmbientPuff();
           } else {
             puffs.splice(i, 1);
@@ -235,31 +269,24 @@ export function CursorFog() {
         if (p.isAmbient) ambientActiveCount++;
 
         const progress = p.age / p.lifespan;
-
-        // Smooth size expansion (starts 90-140px, grows to 220-320px)
         const sizeEase = 1 - Math.pow(1 - progress, 2);
         p.currentSize = p.startSize + (p.endSize - p.startSize) * sizeEase;
 
-        // Smooth fade curve
         if (p.isAmbient) {
-          // Ambient puffs fade in gently, drift, and fade out
           const fadeIn = Math.min(1, progress * 4);
           const fadeOut = Math.max(0, 1 - Math.pow(progress, 1.5));
           p.currentAlpha = p.maxAlpha * fadeIn * fadeOut;
         } else {
-          // Cursor puffs start with soft quick onset then ease out smoothly to 0
           const fadeIn = Math.min(1, p.age / 0.18);
           const fadeOut = Math.pow(1 - progress, 1.4);
           p.currentAlpha = p.maxAlpha * fadeIn * fadeOut;
         }
 
-        // Drifting motion with gentle sine/noise turbulence wobble
-        const turbulence = Math.sin(p.wobblePhase + currentTime * 0.001 * p.wobbleSpeed) * 3.5;
+        const turbulence = Math.sin(p.wobblePhase + currentTime * 0.001 * p.wobbleSpeed) * 3;
         p.x += (p.vx + turbulence) * deltaSec;
         p.y += p.vy * deltaSec;
         p.rotation += p.rotSpeed * deltaSec;
 
-        // Draw scaled sprite from offscreen canvas
         if (p.currentAlpha > 0.002) {
           ctx.globalAlpha = p.currentAlpha;
           ctx.save();
@@ -271,18 +298,18 @@ export function CursorFog() {
         }
       }
 
-      // Ensure 3-4 ambient patches remain on non-mobile/desktop
-      if (!isTouch && ambientActiveCount < AMBIENT_COUNT && puffs.length < MAX_PUFFS) {
+      if (ambientActiveCount < AMBIENT_COUNT && puffs.length < MAX_PUFFS) {
         puffs.push(spawnAmbientPuff());
       }
 
       ctx.restore();
     };
 
-    animationFrameId = requestAnimationFrame(loop);
+    startLoop();
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      stopLoop();
+      if (heroObserver) heroObserver.disconnect();
       window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", onMouseMove);
     };

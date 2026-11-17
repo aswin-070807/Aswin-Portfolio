@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface EvidenceMarker {
   id: number;
@@ -17,59 +18,77 @@ interface SnapBounds {
 export function SmartCursor() {
   const [isPointerFine, setIsPointerFine] = useState(false);
   const [cursorVisible, setCursorVisible] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const [cursorMode, setCursorMode] = useState<"default" | "button" | "file" | "text" | "pursuit">(
-    "default",
-  );
+  const [cursorMode, setCursorMode] = useState<
+    "default" | "button" | "file" | "text" | "pursuit"
+  >("default");
   const [cursorLabel, setCursorLabel] = useState<string>("OPEN");
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [isClicking, setIsClicking] = useState(false);
   const [evidenceMarkers, setEvidenceMarkers] = useState<EvidenceMarker[]>([]);
-  const [tapRipples, setTapRipples] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [tapRipples, setTapRipples] = useState<
+    { id: number; x: number; y: number }[]
+  >([]);
 
-  // Refs for smooth rAF animation
-  const mouseRef = useRef({ x: -100, y: -100 });
-  const dotRef = useRef({ x: -100, y: -100 });
-  const ringRef = useRef({ x: -100, y: -100 });
-  const snapBoundsRef = useRef<SnapBounds | null>(null);
+  // Coordinates refs for zero-overhead rAF
+  const mousePos = useRef({ x: -100, y: -100 });
+  const dotPos = useRef({ x: -100, y: -100 });
+  const ringPos = useRef({ x: -100, y: -100 });
+
+  // Cached target & bounds (Never queried inside rAF!)
+  const activeElementRef = useRef<HTMLElement | null>(null);
+  const cachedBoundsRef = useRef<SnapBounds | null>(null);
+
+  // rAF and idle tracking
+  const rafRunning = useRef(false);
+  const lastMoveTime = useRef(0);
   const clickCountRef = useRef(0);
   const clickResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // DOM node refs for direct transform updates (60fps)
+  // DOM direct transforms
   const dotDomRef = useRef<HTMLDivElement>(null);
   const ringDomRef = useRef<HTMLDivElement>(null);
 
+  const modeRef = useRef<CursorMode>("default");
+  const labelRef = useRef<string>("OPEN");
+
+  const updateMode = useCallback((m: CursorMode) => {
+    if (modeRef.current !== m) {
+      modeRef.current = m;
+      setCursorMode(m);
+    }
+  }, []);
+
+  const updateLabel = useCallback((l: string) => {
+    if (labelRef.current !== l) {
+      labelRef.current = l;
+      setCursorLabel(l);
+    }
+  }, []);
+
   useEffect(() => {
-    // Check if pointer is fine (desktop)
     const mediaFine = window.matchMedia("(pointer: fine)");
-    const mediaReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-
     setIsPointerFine(mediaFine.matches);
-    setReducedMotion(mediaReduced.matches);
 
-    const onMediaChange = () => setIsPointerFine(mediaFine.matches);
-    const onReducedChange = () => setReducedMotion(mediaReduced.matches);
-
+    const onMediaChange = (e: MediaQueryListEvent) => {
+      setIsPointerFine(e.matches);
+    };
     mediaFine.addEventListener("change", onMediaChange);
-    mediaReduced.addEventListener("change", onReducedChange);
 
-    // On touch devices: show tap ripple
+    // Touch device tap ripple
     const onTouchStart = (e: TouchEvent) => {
       if (mediaFine.matches) return;
-      const touch = e.touches[0];
-      if (!touch) return;
-      const newRipple = { id: Date.now() + Math.random(), x: touch.clientX, y: touch.clientY };
-      setTapRipples((prev) => [...prev.slice(-4), newRipple]);
+      const t = e.touches[0];
+      if (!t) return;
+      const ripple = { id: Date.now() + Math.random(), x: t.clientX, y: t.clientY };
+      setTapRipples((prev) => [...prev.slice(-3), ripple]);
       setTimeout(() => {
-        setTapRipples((prev) => prev.filter((r) => r.id !== newRipple.id));
-      }, 600);
+        setTapRipples((prev) => prev.filter((r) => r.id !== ripple.id));
+      }, 500);
     };
 
     window.addEventListener("touchstart", onTouchStart, { passive: true });
 
     return () => {
       mediaFine.removeEventListener("change", onMediaChange);
-      mediaReduced.removeEventListener("change", onReducedChange);
       window.removeEventListener("touchstart", onTouchStart);
     };
   }, []);
@@ -82,186 +101,214 @@ export function SmartCursor() {
 
     document.documentElement.classList.add("custom-cursor-active");
 
-    const onMouseMove = (e: MouseEvent) => {
-      mouseRef.current.x = e.clientX;
-      mouseRef.current.y = e.clientY;
-      if (!cursorVisible) setCursorVisible(true);
-
-      // Inspect hovered element
-      const target = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-      if (!target) return;
-
-      // 1. Check if inside Pursuit section
-      const pursuitEl = target.closest("#skills, [data-cursor-section='pursuit']");
-      if (pursuitEl) {
-        setCursorMode("pursuit");
-        snapBoundsRef.current = null;
-        return;
-      }
-
-      // 2. Check for File / Evidence dossier element
-      const fileEl = target.closest("[data-cursor='file']") as HTMLElement | null;
-      if (fileEl) {
-        setCursorMode("file");
-        const rect = fileEl.getBoundingClientRect();
-        snapBoundsRef.current = {
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height,
-        };
-        setCursorLabel(fileEl.getAttribute("data-cursor-label") || "OPEN FILE");
-        return;
-      }
-
-      // 3. Check for links, buttons, interactive elements
-      const btnEl = target.closest(
-        "a, button, [role='button'], input[type='submit'], [data-cursor='button']",
-      ) as HTMLElement | null;
-      if (btnEl) {
-        setCursorMode("button");
-        const rect = btnEl.getBoundingClientRect();
-        snapBoundsRef.current = {
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height,
-        };
-        const customLabel = btnEl.getAttribute("data-cursor-label");
-        const textContent = (btnEl.textContent || "").trim().toUpperCase();
-        let derived = "OPEN";
-        if (customLabel) derived = customLabel;
-        else if (textContent.includes("RESUME") || textContent.includes("CV"))
-          derived = "DOWNLOAD RESUME";
-        else if (textContent.includes("SEND") || textContent.includes("SUBMIT")) derived = "SEND";
-        else if (textContent.includes("VIEW") || textContent.includes("PREVIEW")) derived = "VIEW";
-        setCursorLabel(derived);
-        return;
-      }
-
-      // 4. Check for text headings or paragraphs
-      const textEl = target.closest("p, h1, h2, h3, h4, h5, h6, input[type='text'], textarea");
-      if (textEl && !target.closest("button, a")) {
-        setCursorMode("text");
-        snapBoundsRef.current = null;
-        return;
-      }
-
-      // 5. Default
-      setCursorMode("default");
-      snapBoundsRef.current = null;
-
-      // Check background theme of current section
-      const darkSection = target.closest(
-        "[data-cursor-theme='dark'], .bg-[#050c18], .bg-[#0a1422], .bg-[#0f1b2d]",
-      );
-      setIsDarkTheme(!!darkSection);
+    // Helper: start rAF loop only when mouse moves
+    const startLoop = () => {
+      if (rafRunning.current) return;
+      rafRunning.current = true;
+      requestAnimationFrame(tick);
     };
 
-    const onMouseLeave = () => setCursorVisible(false);
-    const onMouseEnter = () => setCursorVisible(true);
+    // Main rAF tick: Only updates transform, zero getBoundingClientRect
+    const lerp = (a: number, b: number, n: number) => a + (b - a) * n;
+
+    const tick = () => {
+      const tx = mousePos.current.x;
+      const ty = mousePos.current.y;
+
+      // Instant dot
+      dotPos.current.x = tx;
+      dotPos.current.y = ty;
+
+      // Lagged ring
+      ringPos.current.x = lerp(ringPos.current.x, tx, 0.22);
+      ringPos.current.y = lerp(ringPos.current.y, ty, 0.22);
+
+      if (dotDomRef.current) {
+        dotDomRef.current.style.transform = `translate3d(${dotPos.current.x}px, ${dotPos.current.y}px, 0)`;
+      }
+
+      if (ringDomRef.current) {
+        if (cachedBoundsRef.current) {
+          const b = cachedBoundsRef.current;
+          ringDomRef.current.style.transform = `translate3d(${b.left}px, ${b.top}px, 0)`;
+          ringDomRef.current.style.width = `${b.width}px`;
+          ringDomRef.current.style.height = `${b.height}px`;
+        } else {
+          ringDomRef.current.style.transform = `translate3d(${ringPos.current.x}px, ${ringPos.current.y}px, 0)`;
+          ringDomRef.current.style.width = "";
+          ringDomRef.current.style.height = "";
+        }
+      }
+
+      // Check if mouse is idle and ring has settled
+      const dist = Math.hypot(tx - ringPos.current.x, ty - ringPos.current.y);
+      const isIdle = performance.now() - lastMoveTime.current > 150;
+
+      if (isIdle && dist < 0.2) {
+        rafRunning.current = false; // Stop rAF loop when idle!
+        return;
+      }
+
+      requestAnimationFrame(tick);
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      mousePos.current.x = e.clientX;
+      mousePos.current.y = e.clientY;
+      lastMoveTime.current = performance.now();
+      if (!cursorVisible) setCursorVisible(true);
+      startLoop();
+    };
+
+    // Event Delegation for hover detection (Single listener on document!)
+    const onMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target || target === activeElementRef.current) return;
+
+      // 1. File / Evidence cards check
+      const fileEl = target.closest("[data-cursor='file']") as HTMLElement | null;
+      if (fileEl) {
+        if (activeElementRef.current !== fileEl) {
+          activeElementRef.current = fileEl;
+          const rect = fileEl.getBoundingClientRect();
+          cachedBoundsRef.current = {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+          };
+          updateLabel(fileEl.getAttribute("data-cursor-label") || "OPEN FILE");
+          updateMode("file");
+          startLoop();
+        }
+        return;
+      }
+
+      // 2. Interactive buttons & links check
+      const btnEl = target.closest("a, button, [role='button'], input[type='submit']") as HTMLElement | null;
+      if (btnEl) {
+        if (activeElementRef.current !== btnEl) {
+          activeElementRef.current = btnEl;
+          const rect = btnEl.getBoundingClientRect();
+          cachedBoundsRef.current = {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+          };
+          const custom = btnEl.getAttribute("data-cursor-label");
+          const txt = (btnEl.textContent || "").trim().toUpperCase();
+          let derived = "OPEN";
+          if (custom) derived = custom;
+          else if (txt.includes("RESUME")) derived = "DOWNLOAD RESUME";
+          else if (txt.includes("SEND") || txt.includes("SUBMIT")) derived = "SEND";
+          else if (txt.includes("VIEW")) derived = "VIEW";
+          updateLabel(derived);
+          updateMode("button");
+          startLoop();
+        }
+        return;
+      }
+
+      // 3. Text headings or paragraphs
+      const textEl = target.closest("p, h1, h2, h3, h4, h5, h6");
+      if (textEl && !target.closest("button, a")) {
+        activeElementRef.current = textEl as HTMLElement;
+        cachedBoundsRef.current = null;
+        updateMode("text");
+        startLoop();
+        return;
+      }
+
+      // 4. Default
+      activeElementRef.current = null;
+      cachedBoundsRef.current = null;
+      updateMode("default");
+      startLoop();
+    };
+
+    // Throttled passive scroll/resize update for cached bounding box
+    let scrollThrottle = false;
+    const onScrollOrResize = () => {
+      if (scrollThrottle || !activeElementRef.current) return;
+      scrollThrottle = true;
+      requestAnimationFrame(() => {
+        if (activeElementRef.current) {
+          const r = activeElementRef.current.getBoundingClientRect();
+          cachedBoundsRef.current = {
+            left: r.left,
+            top: r.top,
+            width: r.width,
+            height: r.height,
+          };
+          startLoop();
+        }
+        scrollThrottle = false;
+      });
+    };
 
     const onMouseDown = (e: MouseEvent) => {
       setIsClicking(true);
-      setTimeout(() => setIsClicking(false), 200);
+      setTimeout(() => setIsClicking(false), 180);
 
-      if (reducedMotion) return;
-
-      // Increment evidence marker number
       clickCountRef.current += 1;
-      const markerNum = clickCountRef.current;
+      const num = clickCountRef.current;
 
       if (clickResetTimerRef.current) clearTimeout(clickResetTimerRef.current);
       clickResetTimerRef.current = setTimeout(() => {
         clickCountRef.current = 0;
       }, 4000);
 
-      // Add evidence marker
-      const newMarker: EvidenceMarker = {
+      const marker: EvidenceMarker = {
         id: Date.now() + Math.random(),
         x: e.clientX,
         y: e.clientY,
-        num: markerNum,
+        num,
       };
 
-      setEvidenceMarkers((prev) => [...prev.slice(-4), newMarker]);
-
+      setEvidenceMarkers((prev) => [...prev.slice(-4), marker]);
       setTimeout(() => {
-        setEvidenceMarkers((prev) => prev.filter((m) => m.id !== newMarker.id));
+        setEvidenceMarkers((prev) => prev.filter((m) => m.id !== marker.id));
       }, 1500);
     };
 
+    const onMouseLeave = () => setCursorVisible(false);
+    const onMouseEnter = () => setCursorVisible(true);
+
     window.addEventListener("mousemove", onMouseMove, { passive: true });
+    document.addEventListener("mouseover", onMouseOver, { passive: true });
+    window.addEventListener("scroll", onScrollOrResize, { passive: true });
+    window.addEventListener("resize", onScrollOrResize, { passive: true });
+    window.addEventListener("mousedown", onMouseDown, { passive: true });
     document.addEventListener("mouseleave", onMouseLeave);
     document.addEventListener("mouseenter", onMouseEnter);
-    window.addEventListener("mousedown", onMouseDown);
-
-    // Lerp loop with requestAnimationFrame
-    let rafId: number;
-    const lerp = (a: number, b: number, n: number) => a + (b - a) * n;
-
-    const tick = () => {
-      const targetX = mouseRef.current.x;
-      const targetY = mouseRef.current.y;
-
-      // Instant dot position
-      dotRef.current.x = targetX;
-      dotRef.current.y = targetY;
-
-      // Lagged ring position
-      const factor = reducedMotion ? 1 : 0.22;
-      ringRef.current.x = lerp(ringRef.current.x, targetX, factor);
-      ringRef.current.y = lerp(ringRef.current.y, targetY, factor);
-
-      if (dotDomRef.current) {
-        dotDomRef.current.style.transform = `translate3d(${dotRef.current.x}px, ${dotRef.current.y}px, 0)`;
-      }
-
-      if (ringDomRef.current) {
-        if (snapBoundsRef.current && (cursorMode === "button" || cursorMode === "file")) {
-          const b = snapBoundsRef.current;
-          ringDomRef.current.style.transform = `translate3d(${b.left}px, ${b.top}px, 0)`;
-          ringDomRef.current.style.width = `${b.width}px`;
-          ringDomRef.current.style.height = `${b.height}px`;
-        } else {
-          ringDomRef.current.style.transform = `translate3d(${ringRef.current.x}px, ${ringRef.current.y}px, 0)`;
-          ringDomRef.current.style.width = "";
-          ringDomRef.current.style.height = "";
-        }
-      }
-
-      rafId = requestAnimationFrame(tick);
-    };
-
-    rafId = requestAnimationFrame(tick);
 
     return () => {
       document.documentElement.classList.remove("custom-cursor-active");
       window.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseover", onMouseOver);
+      window.removeEventListener("scroll", onScrollOrResize);
+      window.removeEventListener("resize", onScrollOrResize);
+      window.removeEventListener("mousedown", onMouseDown);
       document.removeEventListener("mouseleave", onMouseLeave);
       document.removeEventListener("mouseenter", onMouseEnter);
-      window.removeEventListener("mousedown", onMouseDown);
-      cancelAnimationFrame(rafId);
       if (clickResetTimerRef.current) clearTimeout(clickResetTimerRef.current);
     };
-  }, [isPointerFine, cursorVisible, reducedMotion, cursorMode]);
+  }, [isPointerFine, cursorVisible]);
 
-  // Touch device view: Tap ripples only
+  // Touch device: tap ripples only
   if (!isPointerFine) {
     return (
-      <div
-        className="pointer-events-none fixed inset-0 z-[999999] overflow-hidden"
-        aria-hidden="true"
-      >
+      <div className="pointer-events-none fixed inset-0 z-[999999] overflow-hidden" aria-hidden="true">
         {tapRipples.map((r) => (
           <div
             key={r.id}
             className="absolute rounded-full border-2 border-[#FFD21F] bg-[#FFD21F]/20 animate-ping"
             style={{
-              left: r.x - 14,
-              top: r.y - 14,
-              width: 28,
-              height: 28,
+              left: r.x - 12,
+              top: r.y - 12,
+              width: 24,
+              height: 24,
             }}
           />
         ))}
@@ -271,147 +318,85 @@ export function SmartCursor() {
 
   if (!cursorVisible) return null;
 
-  // Color theme: dark section vs light section
-  const ringColor = isDarkTheme ? "#FFD21F" : "#0B1F4B";
-  const dotColor = isDarkTheme ? "#22d3ee" : "#0B1F4B";
-
   return (
-    <div
-      className="pointer-events-none fixed inset-0 z-[999999] overflow-hidden select-none"
-      aria-hidden="true"
-    >
-      {/* ─── 1. EVIDENCE MARKERS (Dropped on click) ─── */}
+    <div className="pointer-events-none fixed inset-0 z-[999999] overflow-hidden select-none" aria-hidden="true">
+      {/* Evidence Markers (Tent shaped) */}
       {evidenceMarkers.map((m) => (
         <div
           key={m.id}
-          className="absolute z-10 transition-opacity duration-500 ease-out flex flex-col items-center"
+          className="absolute z-10 transition-opacity duration-300 flex flex-col items-center"
           style={{
             left: m.x,
             top: m.y,
             transform: "translate(-50%, -100%)",
           }}
         >
-          {/* Tent Marker Body */}
-          <div className="relative px-1.5 py-0.5 rounded-t bg-[#FFD21F] border border-slate-900 shadow-lg text-slate-950 font-mono font-black text-[11px] leading-tight flex items-center justify-center min-w-[20px]">
+          <div className="relative px-1.5 py-0.5 rounded-t bg-[#FFD21F] border border-slate-900 shadow-md text-slate-950 font-mono font-black text-[10px] leading-tight">
             {m.num}
-            {/* Tent fold crease */}
             <div className="absolute inset-x-0 bottom-0 h-0.5 bg-amber-600/60" />
           </div>
-          {/* Marker tent stand feet */}
-          <div className="w-5 h-1 bg-slate-900/40 rounded-full blur-[1px]" />
+          <div className="w-4 h-0.5 bg-slate-900/30 rounded-full" />
         </div>
       ))}
 
-      {/* ─── 2. INSTANT CENTER DOT (Hidden in button/file snap mode) ─── */}
-      {cursorMode !== "button" && cursorMode !== "file" && cursorMode !== "pursuit" && (
+      {/* Center Dot */}
+      {cursorMode !== "button" && cursorMode !== "file" && (
         <div
           ref={dotDomRef}
-          className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full pointer-events-none -ml-[3px] -mt-[3px] will-change-transform z-30 transition-colors duration-200"
+          className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full pointer-events-none -ml-[3px] -mt-[3px] will-change-transform z-30 bg-[#FFD21F]"
           style={{
-            backgroundColor: dotColor,
-            boxShadow: isDarkTheme ? "0 0 6px rgba(34,211,238,0.8)" : "none",
+            boxShadow: "0 0 6px rgba(255,210,31,0.8)",
           }}
         />
       )}
 
-      {/* ─── 3. MORPHING DETECTIVE RING / VIEWFINDER ─── */}
-      {cursorMode !== "pursuit" && (
-        <div
-          ref={ringDomRef}
-          className="fixed top-0 left-0 pointer-events-none will-change-transform z-20"
-        >
-          {/* MODE: DEFAULT (Thin Detective Lens Ring with Crosshair Notches) */}
-          {cursorMode === "default" && (
-            <div
-              className={`relative -ml-3.5 -mt-3.5 w-7 h-7 rounded-full border border-dashed transition-all duration-150 ${
-                isClicking ? "scale-150 bg-white/40 ring-4 ring-white" : ""
-              }`}
-              style={{
-                borderColor: ringColor,
-                boxShadow: isDarkTheme ? "0 0 10px rgba(255,210,31,0.4)" : "none",
-              }}
-            >
-              {/* Detective Crosshair Notches */}
-              <div
-                className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-1 bg-current"
-                style={{ color: ringColor }}
-              />
-              <div
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0.5 h-1 bg-current"
-                style={{ color: ringColor }}
-              />
-              <div
-                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0.5 bg-current"
-                style={{ color: ringColor }}
-              />
-              <div
-                className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-0.5 bg-current"
-                style={{ color: ringColor }}
-              />
-            </div>
-          )}
-
-          {/* MODE: TEXT (Shrinks to Thin Vertical Beam) */}
-          {cursorMode === "text" && (
-            <div
-              className="-ml-[1px] -mt-2.5 w-[2px] h-5 rounded-full"
-              style={{
-                backgroundColor: ringColor,
-                boxShadow: isDarkTheme ? "0 0 8px rgba(34,211,238,0.8)" : "none",
-              }}
-            />
-          )}
-
-          {/* MODE: BUTTON & FILE (Snaps to Element Bounding Box with Corner Brackets) */}
-          {(cursorMode === "button" || cursorMode === "file") && (
-            <div className="relative w-full h-full -m-1 p-2">
-              {/* 4 Corner Viewfinder Brackets */}
-              <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-[#FFD21F] shadow-sm" />
-              <div className="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 border-[#FFD21F] shadow-sm" />
-              <div className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 border-[#FFD21F] shadow-sm" />
-              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-[#FFD21F] shadow-sm" />
-
-              {/* Viewfinder Label Tag (Above-Right) */}
-              <div className="absolute -top-5 right-0 px-1.5 py-0.5 rounded bg-slate-950/90 border border-[#FFD21F]/80 text-[#FFD21F] font-mono text-[9px] font-bold tracking-wider uppercase shadow-md whitespace-nowrap">
-                {cursorLabel}
-              </div>
-
-              {/* Camera Flash effect on click */}
-              {isClicking && (
-                <div className="absolute inset-0 bg-white/40 rounded animate-ping pointer-events-none" />
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ─── 4. MODE: PURSUIT (Police Searchlight Conical Spotlight) ─── */}
-      {cursorMode === "pursuit" && (
-        <div
-          ref={ringDomRef}
-          className="fixed top-0 left-0 pointer-events-none will-change-transform z-20"
-        >
+      {/* Detective Lens Ring / Snapped Viewfinder */}
+      <div
+        ref={ringDomRef}
+        className="fixed top-0 left-0 pointer-events-none will-change-transform z-20"
+      >
+        {cursorMode === "default" && (
           <div
-            className={`relative -ml-24 -mt-24 w-48 h-48 rounded-full pointer-events-none transition-transform duration-100 ${
-              isClicking ? "scale-125" : ""
-            }`}
+            className={cn(
+              "relative -ml-3.5 -mt-3.5 w-7 h-7 rounded-full border border-dashed border-[#FFD21F] transition-transform duration-100",
+              isClicking && "scale-125 bg-[#FFD21F]/20"
+            )}
             style={{
-              background:
-                "radial-gradient(circle, rgba(34,211,238,0.28) 0%, rgba(34,211,238,0.12) 50%, rgba(34,211,238,0) 70%)",
+              boxShadow: "0 0 8px rgba(255,210,31,0.4)",
             }}
           >
-            {/* Center Reticle */}
-            <div className="absolute inset-0 m-auto w-8 h-8 rounded-full border border-cyan-400/80 flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.6)]">
-              <div className="w-1.5 h-1.5 rounded-full bg-cyan-300" />
-            </div>
-
-            {/* Target Locked HUD Tag */}
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-[#071322]/90 border border-cyan-400 text-cyan-300 font-mono text-[8.5px] font-bold tracking-widest uppercase whitespace-nowrap shadow-lg">
-              TARGET LOCKED · 92%
-            </div>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-1 bg-[#FFD21F]" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0.5 h-1 bg-[#FFD21F]" />
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0.5 bg-[#FFD21F]" />
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-0.5 bg-[#FFD21F]" />
           </div>
-        </div>
-      )}
+        )}
+
+        {cursorMode === "text" && (
+          <div className="-ml-[1px] -mt-2.5 w-[2px] h-5 rounded-full bg-[#FFD21F] shadow-[0_0_6px_rgba(255,210,31,0.8)]" />
+        )}
+
+        {(cursorMode === "button" || cursorMode === "file") && (
+          <div className="relative w-full h-full -m-1 p-2">
+            <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-[#FFD21F]" />
+            <div className="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 border-[#FFD21F]" />
+            <div className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 border-[#FFD21F]" />
+            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-[#FFD21F]" />
+            <div className="absolute -top-5 right-0 px-1.5 py-0.5 rounded bg-slate-950/90 border border-[#FFD21F] text-[#FFD21F] font-mono text-[9px] font-bold tracking-wider uppercase shadow-md whitespace-nowrap">
+              {cursorLabel}
+            </div>
+            {isClicking && (
+              <div className="absolute inset-0 bg-[#FFD21F]/20 rounded animate-ping pointer-events-none" />
+            )}
+          </div>
+        )}
+
+        {cursorMode === "pursuit" && (
+          <div className="relative -ml-4 -mt-4 w-8 h-8 rounded-full border border-cyan-400 bg-cyan-400/10 shadow-[0_0_12px_rgba(34,211,238,0.6)] flex items-center justify-center">
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-300" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

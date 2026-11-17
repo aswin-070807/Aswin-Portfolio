@@ -75,29 +75,6 @@ export function MarqueeTape() {
     };
   }, []);
 
-  // Subtle scroll parallax (desktop only)
-  useEffect(() => {
-    if (reduceMotion || isMobile || typeof window === "undefined") return;
-
-    let rafId: number;
-    const onScroll = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        if (!containerRef.current) return;
-        const rect = containerRef.current.getBoundingClientRect();
-        // Shift a few pixels relative to viewport center
-        const centerOffset = (window.innerHeight / 2 - rect.top) * 0.035;
-        setScrollYOffset(Math.max(-18, Math.min(18, centerOffset)));
-      });
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, [reduceMotion, isMobile]);
-
   // Repeat sequence 4 times per half track to ensure seamless infinite looping on any screen size up to 4K
   const renderTrackItems = (
     items: string[],
@@ -123,7 +100,7 @@ export function MarqueeTape() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full py-6 sm:py-8 my-1 sm:my-3 overflow-x-clip select-none pointer-events-auto bg-transparent"
+      className="relative w-full py-6 sm:py-8 my-1 sm:my-3 overflow-hidden select-none pointer-events-auto bg-transparent"
       style={{ minHeight: "140px" }}
       aria-label="Skill Highlights"
     >

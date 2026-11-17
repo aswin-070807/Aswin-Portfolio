@@ -45,6 +45,7 @@ import { EducationAcademicForm } from "./EducationAcademicForm";
 import { ExperienceServiceRecord } from "./ExperienceServiceRecord";
 import { ProjectsEvidenceLocker } from "./ProjectsEvidenceLocker";
 import { SkillsPursuit } from "./SkillsPursuit/SkillsPursuit";
+import { PersonsOfInterest as PersonsOfInterestComponent } from "./PersonsOfInterest/PersonsOfInterest";
 import { CertificationsFloorPlan } from "./CertificationsFloorPlan";
 import { ServicesAgencyDoor } from "./ServicesAgencyDoor";
 import { CaseConclusionFindings } from "./CaseConclusionFindings";
@@ -153,6 +154,13 @@ export function Skills() {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   PERSONS OF INTEREST (Case File Lineup)
+   ───────────────────────────────────────────────────────────── */
+export function PersonsOfInterest() {
+  return <PersonsOfInterestComponent />;
+}
+
+/* ─────────────────────────────────────────────────────────────
    ACHIEVEMENTS / HACKATHONS (Case Files Design Powered by Live Google Sheet)
    ───────────────────────────────────────────────────────────── */
 export function Achievements() {
@@ -203,7 +211,7 @@ function Timeline({
             <span className="absolute -left-[1.35rem] top-0 grid h-10 w-10 place-items-center rounded-full border-2 border-[#0B1F4B] bg-white text-[#0B1F4B] shadow-sm">
               <it.icon className="h-4 w-4" />
             </span>
-            <div className="rounded-2xl p-6 bg-white/92 backdrop-blur-md border border-white/80 shadow-[0_8px_30px_rgba(11,31,75,0.07)]">
+            <div className="rounded-2xl p-6 bg-white/95 border border-white/80 shadow-[0_8px_30px_rgba(11,31,75,0.07)]">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h3 className="text-lg font-bold text-[#0B1F4B]">{it.title}</h3>
                 <span className="rounded-full bg-[#E1F5FE] px-3 py-1 text-xs font-bold text-[#0B1F4B]">

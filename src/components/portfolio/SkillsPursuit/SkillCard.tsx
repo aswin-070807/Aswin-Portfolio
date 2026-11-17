@@ -35,7 +35,7 @@ export function SkillCard({
         ease: [0.16, 1, 0.3, 1],
       }}
       className={cn(
-        "relative rounded-xl bg-[#081426]/90 border border-cyan-500/35 p-3 sm:p-4 backdrop-blur-md shadow-[0_10px_25px_rgba(2,8,20,0.65),inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 hover:border-cyan-400/60 hover:shadow-[0_0_25px_rgba(34,211,238,0.22)] flex items-center justify-between gap-3 overflow-hidden select-none group",
+        "relative rounded-xl bg-[#081426]/95 border border-cyan-500/35 p-3 sm:p-4 shadow-[0_10px_25px_rgba(2,8,20,0.65),inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 hover:border-cyan-400/60 hover:shadow-[0_0_25px_rgba(34,211,238,0.22)] flex items-center justify-between gap-3 overflow-hidden select-none group",
         className,
       )}
       style={{
