@@ -45,6 +45,7 @@ import { EducationAcademicForm } from "./EducationAcademicForm";
 import { ExperienceServiceRecord } from "./ExperienceServiceRecord";
 import { ProjectsEvidenceLocker } from "./ProjectsEvidenceLocker";
 import { SkillsPursuit } from "./SkillsPursuit/SkillsPursuit";
+import { CaseBoard as CaseBoardComponent } from "./CaseBoard/CaseBoard";
 import { CertificationsFloorPlan } from "./CertificationsFloorPlan";
 import { ServicesAgencyDoor } from "./ServicesAgencyDoor";
 import { CaseConclusionFindings } from "./CaseConclusionFindings";
@@ -155,8 +156,13 @@ export function Skills() {
 /* ─────────────────────────────────────────────────────────────
    CASE BOARD (Case Files: Solved)
    ───────────────────────────────────────────────────────────── */
+export function CaseBoard() {
+  return <CaseBoardComponent />;
+}
+
+// Legacy alias to maintain compatibility
 export function PersonsOfInterest() {
-  return null;
+  return <CaseBoardComponent />;
 }
 
 /* ─────────────────────────────────────────────────────────────

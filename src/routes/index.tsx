@@ -8,11 +8,11 @@ import { MarqueeTape } from "@/components/portfolio/MarqueeTape";
 import {
   About,
   Achievements,
+  CaseBoard,
   Certifications,
   Education,
   Experience,
   Highlights,
-  PersonsOfInterest,
   Projects,
   Services,
   Skills,
@@ -56,7 +56,7 @@ function Index() {
           <MarqueeTape />
           <About />
           <Skills />
-          <PersonsOfInterest />
+          <CaseBoard />
           <Achievements />
           <Projects />
           <Experience />
