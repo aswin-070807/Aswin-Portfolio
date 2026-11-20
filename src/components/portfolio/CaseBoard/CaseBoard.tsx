@@ -97,26 +97,36 @@ export function CaseBoard() {
         />
 
         {/* Cards Grid / Row:
-            - Desktop: 5 cards in a slightly staggered single row
-            - Tablet: 2-row layout (3 top, 2 bottom centered)
-            - Mobile: single vertical stack */}
-        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 sm:gap-5 lg:gap-4 items-stretch">
+            - Desktop (>= 1024px): 5 cards in a slightly staggered single row
+            - Tablet (768px - 1023px): 2 rows (3 top row, 2 bottom row)
+            - Mobile (< 768px): single vertical stack with >= 44px tap targets */}
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-6 lg:grid-cols-5 gap-6 sm:gap-5 lg:gap-4 items-stretch">
           {caseFiles.map((file, idx) => {
             const isActive = activeFile?.id === file.id;
             const isHovered = hoveredFileId === file.id;
 
+            // Responsive span classes:
+            // Mobile: 1 column
+            // Tablet (md): top 3 cards span 2 each (=6), bottom 2 cards span 3 each (=6)
+            // Desktop (lg): each card spans 1 (=5)
+            const colSpanClass =
+              idx < 3
+                ? "md:col-span-2 lg:col-span-1"
+                : "md:col-span-3 lg:col-span-1";
+
             return (
-              <CaseCard
-                key={file.id}
-                cardIndex={idx}
-                file={file}
-                isActive={isActive}
-                isHovered={isHovered}
-                onHover={(hovered) => setHoveredFileId(hovered ? file.id : null)}
-                onSelect={(selected) => handleSelectFile(selected, idx)}
-                ref={(el) => (cardRefs.current[idx] = el)}
-                pinRef={(el) => (pinRefs.current[idx] = el)}
-              />
+              <div key={file.id} className={colSpanClass}>
+                <CaseCard
+                  cardIndex={idx}
+                  file={file}
+                  isActive={isActive}
+                  isHovered={isHovered}
+                  onHover={(hovered) => setHoveredFileId(hovered ? file.id : null)}
+                  onSelect={(selected) => handleSelectFile(selected, idx)}
+                  ref={(el) => (cardRefs.current[idx] = el)}
+                  pinRef={(el) => (pinRefs.current[idx] = el)}
+                />
+              </div>
             );
           })}
         </div>

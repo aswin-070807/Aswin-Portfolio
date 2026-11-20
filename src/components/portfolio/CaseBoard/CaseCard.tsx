@@ -15,6 +15,16 @@ interface CaseCardProps {
 
 export const CaseCard = React.forwardRef<HTMLButtonElement, CaseCardProps>(
   ({ file, isActive, isHovered, onHover, onSelect, pinRef, cardIndex }, ref) => {
+    // Check prefers-reduced-motion
+    const [reduceMotion, setReduceMotion] = React.useState(false);
+    React.useEffect(() => {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      setReduceMotion(mq.matches);
+      const handler = (e: MediaQueryListEvent) => setReduceMotion(e.matches);
+      mq.addEventListener("change", handler);
+      return () => mq.removeEventListener("change", handler);
+    }, []);
+
     // Subtle vertical stagger for desktop
     const desktopStaggerClass =
       cardIndex === 0
@@ -27,12 +37,20 @@ export const CaseCard = React.forwardRef<HTMLButtonElement, CaseCardProps>(
               ? "lg:-translate-y-1"
               : "lg:translate-y-2";
 
+    const transformStyle = reduceMotion
+      ? "none"
+      : isHovered || isActive
+        ? "rotate(0deg) translateY(-6px)"
+        : `rotate(${file.rotation}deg)`;
+
     return (
       <div
         className={cn("relative group transition-transform duration-300", desktopStaggerClass)}
         style={{
-          transform: isHovered || isActive ? "rotate(0deg) translateY(-6px)" : `rotate(${file.rotation}deg)`,
-          transition: "transform 350ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 350ms cubic-bezier(0.16, 1, 0.3, 1)",
+          transform: transformStyle,
+          transition: reduceMotion
+            ? "none"
+            : "transform 350ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 350ms cubic-bezier(0.16, 1, 0.3, 1)",
         }}
       >
         {/* Metal Pushpin at top center */}
