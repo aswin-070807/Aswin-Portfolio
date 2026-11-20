@@ -45,7 +45,6 @@ import { EducationAcademicForm } from "./EducationAcademicForm";
 import { ExperienceServiceRecord } from "./ExperienceServiceRecord";
 import { ProjectsEvidenceLocker } from "./ProjectsEvidenceLocker";
 import { SkillsPursuit } from "./SkillsPursuit/SkillsPursuit";
-import { PersonsOfInterest as PersonsOfInterestComponent } from "./PersonsOfInterest/PersonsOfInterest";
 import { CertificationsFloorPlan } from "./CertificationsFloorPlan";
 import { ServicesAgencyDoor } from "./ServicesAgencyDoor";
 import { CaseConclusionFindings } from "./CaseConclusionFindings";
@@ -154,10 +153,10 @@ export function Skills() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   PERSONS OF INTEREST (Case File Lineup)
+   CASE BOARD (Case Files: Solved)
    ───────────────────────────────────────────────────────────── */
 export function PersonsOfInterest() {
-  return <PersonsOfInterestComponent />;
+  return null;
 }
 
 /* ─────────────────────────────────────────────────────────────
