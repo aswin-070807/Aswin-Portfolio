@@ -1,66 +1,97 @@
 import React from "react";
-import type { IconType } from "react-icons";
 import {
   SiPython,
   SiC,
   SiCplusplus,
   SiJavascript,
+  SiHtml5,
+  SiCss,
   SiReact,
   SiNodedotjs,
   SiGit,
   SiGithub,
 } from "react-icons/si";
+import {
+  Code2,
+  Network,
+  Palette,
+  Search,
+  Bot,
+  Sparkles,
+  MessageSquare,
+  Puzzle,
+  Users,
+  Clock,
+} from "lucide-react";
 
 /* ─────────────────────────────────────────────────────────────
    TOOLKIT DATA CONFIG
-   Easily add or modify technical skills and competencies here.
+   Single unified config array. Edit skills, levels, and icons here.
    ───────────────────────────────────────────────────────────── */
-export interface TechSkill {
+export type ProficiencyLevel = "Advanced" | "Proficient" | "Working knowledge";
+
+export interface SkillItem {
   name: string;
-  level: "Advanced" | "Proficient";
-  icon: IconType;
+  level: ProficiencyLevel;
+  icon: React.ComponentType<{
+    className?: string;
+    size?: number | string;
+    strokeWidth?: number;
+    "aria-hidden"?: boolean | "true" | "false";
+  }>;
 }
 
 export interface SkillGroup {
-  category: string;
-  skills: string[];
+  groupName: string;
+  skills: SkillItem[];
 }
 
-export const MAIN_TECH_STACK: TechSkill[] = [
-  { name: "Python", level: "Advanced", icon: SiPython },
-  { name: "C", level: "Advanced", icon: SiC },
-  { name: "C++", level: "Advanced", icon: SiCplusplus },
-  { name: "JavaScript", level: "Proficient", icon: SiJavascript },
-  { name: "React.js", level: "Proficient", icon: SiReact },
-  { name: "Node.js", level: "Proficient", icon: SiNodedotjs },
-  { name: "Git", level: "Advanced", icon: SiGit },
-  { name: "GitHub", level: "Advanced", icon: SiGithub },
-];
-
-export const ADDITIONAL_SKILL_GROUPS: SkillGroup[] = [
+export const TOOLKIT_GROUPS: SkillGroup[] = [
   {
-    category: "Development",
+    groupName: "Languages",
     skills: [
-      "Software Development",
-      "Data Structures",
-      "UI/UX Design",
-      "Basic SEO",
-      "AI-Assisted Development",
+      { name: "Python", level: "Advanced", icon: SiPython },
+      { name: "C", level: "Advanced", icon: SiC },
+      { name: "C++", level: "Advanced", icon: SiCplusplus },
+      { name: "JavaScript", level: "Proficient", icon: SiJavascript },
+      { name: "HTML", level: "Advanced", icon: SiHtml5 },
+      { name: "CSS", level: "Proficient", icon: SiCss },
     ],
   },
   {
-    category: "AI",
-    skills: ["Generative AI Prompting"],
+    groupName: "Frameworks and tools",
+    skills: [
+      { name: "React.js", level: "Proficient", icon: SiReact },
+      { name: "Node.js", level: "Proficient", icon: SiNodedotjs },
+      { name: "Git", level: "Advanced", icon: SiGit },
+      { name: "GitHub", level: "Advanced", icon: SiGithub },
+    ],
   },
   {
-    category: "Professional",
-    skills: ["Communication"],
+    groupName: "Development",
+    skills: [
+      { name: "Software Development", level: "Advanced", icon: Code2 },
+      { name: "Data Structures", level: "Proficient", icon: Network },
+      { name: "UI/UX Design", level: "Proficient", icon: Palette },
+      { name: "Basic SEO", level: "Working knowledge", icon: Search },
+    ],
+  },
+  {
+    groupName: "AI and professional",
+    skills: [
+      { name: "AI-Assisted Development", level: "Advanced", icon: Bot },
+      { name: "Generative AI Prompting", level: "Advanced", icon: Sparkles },
+      { name: "Communication", level: "Advanced", icon: MessageSquare },
+      { name: "Problem Solving", level: "Advanced", icon: Puzzle },
+      { name: "Teamwork", level: "Advanced", icon: Users },
+      { name: "Time Management", level: "Proficient", icon: Clock },
+    ],
   },
 ];
 
 /* ─────────────────────────────────────────────────────────────
    MY TOOLKIT COMPONENT
-   Clean, modern, recruiter-friendly tech stack and skills grid.
+   Unified tile grid with 6-column desktop layout.
    ───────────────────────────────────────────────────────────── */
 export function SkillsPursuit() {
   return (
@@ -69,7 +100,7 @@ export function SkillsPursuit() {
       aria-labelledby="toolkit-title"
       className="relative w-full bg-[#050c18] text-slate-100 py-16 sm:py-20 overflow-hidden"
     >
-      {/* Subtle edge blend into the page's background */}
+      {/* Subtle edge blend into adjacent sections */}
       <div
         className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-[#E8F1FC]/20 via-transparent to-transparent pointer-events-none"
         aria-hidden="true"
@@ -93,71 +124,71 @@ export function SkillsPursuit() {
           </p>
         </div>
 
-        {/* Part A: Main Tech Stack Logo Grid */}
-        <ul
-          role="list"
-          aria-label="Core technologies"
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
-        >
-          {MAIN_TECH_STACK.map((skill) => {
-            const Icon = skill.icon;
+        {/* Skill Groups */}
+        <div className="space-y-8 sm:space-y-10">
+          {TOOLKIT_GROUPS.map((group) => {
+            const groupId = `group-${group.groupName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
             return (
-              <li
-                key={skill.name}
-                tabIndex={0}
-                aria-label={`${skill.name}, ${skill.level}`}
-                className="group relative flex flex-col items-center justify-center text-center p-4 sm:p-5 rounded-xl bg-[#081528]/90 border border-slate-800/90 hover:border-cyan-400/60 hover:-translate-y-1 transition-all duration-200 ease-out motion-reduce:hover:translate-y-0 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050c18] cursor-default"
-              >
-                <Icon
-                  size={32}
-                  aria-hidden="true"
-                  className="text-slate-400 group-hover:text-cyan-400 transition-colors duration-200 shrink-0"
-                />
-                <span className="mt-3 font-sans font-medium text-sm sm:text-base text-slate-100 tracking-tight">
-                  {skill.name}
-                </span>
-                <span className="mt-1 font-sans text-xs text-slate-400">
-                  {skill.level}
-                </span>
-              </li>
+              <div key={group.groupName}>
+                {/* Sentence case, medium weight, muted color, left-aligned heading */}
+                <h3
+                  id={groupId}
+                  className="font-sans text-sm sm:text-base font-medium text-slate-400 mb-3 sm:mb-4 text-left"
+                >
+                  {group.groupName}
+                </h3>
+
+                {/* 6 columns on desktop (>=1100px), 3 columns on tablet (600-1099px), 2 columns on mobile (<600px).
+                    Groups with 4 tiles are left-aligned and do not stretch. */}
+                <ul
+                  role="list"
+                  aria-labelledby={groupId}
+                  className="grid grid-cols-2 min-[600px]:grid-cols-3 min-[1100px]:grid-cols-6 gap-3 sm:gap-4"
+                >
+                  {group.skills.map((skill) => {
+                    const Icon = skill.icon;
+                    return (
+                      <li
+                        key={skill.name}
+                        tabIndex={0}
+                        aria-label={`${skill.name}, ${skill.level}`}
+                        className="group relative flex flex-col items-center justify-between text-center p-3.5 sm:p-4 rounded-xl min-h-[128px] h-full bg-[#081528]/90 border border-slate-800/90 hover:border-cyan-400/60 hover:-translate-y-[2px] transition-all duration-200 ease-out motion-reduce:hover:translate-y-0 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050c18] cursor-default select-none"
+                      >
+                        {/* Icon: Same size, muted default, cyan on hover */}
+                        <div className="flex items-center justify-center h-8 shrink-0">
+                          <Icon
+                            size={28}
+                            strokeWidth={1.8}
+                            aria-hidden="true"
+                            className="w-7 h-7 text-slate-400 group-hover:text-cyan-400 transition-colors duration-200 shrink-0"
+                          />
+                        </div>
+
+                        {/* Skill Name: Vertically centered, wraps cleanly up to 2 lines */}
+                        <div className="flex-1 flex items-center justify-center my-1.5 px-0.5">
+                          <span className="font-sans font-medium text-xs sm:text-sm text-slate-100 leading-snug line-clamp-2 text-center">
+                            {skill.name}
+                          </span>
+                        </div>
+
+                        {/* Level Label: Small, muted, consistent baseline */}
+                        <span className="font-sans text-[11px] sm:text-xs text-slate-400 shrink-0">
+                          {skill.level}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             );
           })}
-        </ul>
-
-        {/* Part B: Skills Without Logos (Pill Chips) */}
-        <div className="mt-10 sm:mt-12 pt-8 sm:pt-10 border-t border-slate-800/80 space-y-6">
-          {ADDITIONAL_SKILL_GROUPS.map((group) => (
-            <div
-              key={group.category}
-              className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-6"
-            >
-              <h3 className="w-32 shrink-0 text-xs font-semibold uppercase tracking-wider text-slate-400 font-sans">
-                {group.category}
-              </h3>
-              <ul
-                role="list"
-                aria-label={`${group.category} skills`}
-                className="flex flex-wrap gap-2"
-              >
-                {group.skills.map((skill) => (
-                  <li
-                    key={skill}
-                    tabIndex={0}
-                    className="px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-sans bg-[#081528]/80 border border-slate-800 text-slate-300 hover:border-cyan-500/40 hover:text-cyan-200 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[#050c18] cursor-default"
-                  >
-                    {skill}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
         </div>
       </div>
     </section>
   );
 }
 
-// Backward-compatibility aliases for existing imports
+// Backward-compatibility exports
 export const ToolkitSurveillance = SkillsPursuit;
 export const Toolkit = SkillsPursuit;
 export default SkillsPursuit;
