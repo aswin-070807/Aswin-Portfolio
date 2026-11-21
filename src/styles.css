@@ -10,21 +10,6 @@
   }
 }
 
-/* Lightweight CSS Road Scroll Animation */
-@keyframes road-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-road-scroll {
-  animation: road-scroll 2.2s linear infinite;
-  will-change: transform;
-}
-
 @theme inline {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;

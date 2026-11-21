@@ -142,7 +142,7 @@ export function About() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   SKILLS SECTION (The Pursuit - Scroll-Driven Night Chase)
+   SKILLS SECTION (My Toolkit - Professional Tech Logo Grid)
    ───────────────────────────────────────────────────────────── */
 export function Skills() {
   return (
